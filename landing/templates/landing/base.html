@@ -1,0 +1,135 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <title>Saidex — {% trans "Biznesingiz uchun AI yechimlari" %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% trans "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati." %}">
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("saidex_landing_theme");
+                if (theme) document.documentElement.setAttribute("data-theme", theme);
+            } catch (e) { /* noop */ }
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="{% static 'landing/style.css' %}?v=3" rel="stylesheet">
+</head>
+<body class="landing">
+<header class="landing-header">
+    <div class="bar">
+        <a href="{% url 'landing:home' %}" class="landing-brand">
+            {% if settings.logo %}
+                <img src="{{ settings.logo.url }}" alt="Saidex">
+            {% else %}
+                <span class="brand-fallback">S</span>
+            {% endif %}
+            Saidex
+        </a>
+        <nav class="landing-nav">
+            <a href="#services">{% trans "Xizmatlar" %}</a>
+            <a href="#tariffs">{% trans "Tariflar" %}</a>
+            <a href="#portfolio">{% trans "Ishlarimiz" %}</a>
+            <a href="#testimonials">{% trans "Mijozlar fikri" %}</a>
+        </nav>
+        <div class="landing-actions">
+            <button type="button" class="theme-toggle-btn" data-theme-toggle title="{% trans "Kun/tun rejimi" %}">🌙</button>
+            {% get_current_language as CURRENT_LANGUAGE %}
+            <div class="lang-switcher" data-lang-switcher>
+                <button type="button" data-lang-toggle>
+                    {% if CURRENT_LANGUAGE == 'ru' %}🇷🇺 RU{% elif CURRENT_LANGUAGE == 'en' %}🇬🇧 EN{% else %}🇺🇿 UZ{% endif %}
+                </button>
+                <div class="lang-menu">
+                    <form action="{% url 'set_language' %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" name="language" value="uz">🇺🇿 O'zbekcha</button>
+                    </form>
+                    <form action="{% url 'set_language' %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" name="language" value="ru">🇷🇺 Русский</button>
+                    </form>
+                    <form action="{% url 'set_language' %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" name="language" value="en">🇬🇧 English</button>
+                    </form>
+                </div>
+            </div>
+            <a href="#contact" class="btn btn-primary btn-sm">{% trans "Bog'lanish" %}</a>
+        </div>
+    </div>
+</header>
+
+{% block content %}{% endblock %}
+
+<footer class="landing-footer">
+    <div class="container">
+        <div class="footer-top">
+            <div>
+                <div class="landing-brand" style="margin-bottom:.75rem;">
+                    {% if settings.logo %}
+                        <img src="{{ settings.logo.url }}" alt="Saidex">
+                    {% else %}
+                        <span class="brand-fallback">S</span>
+                    {% endif %}
+                    Saidex
+                </div>
+                <p class="footer-note">
+                    {% trans "Saidex — biznesingiz uchun ishonchli, doimiy ishlaydigan AI-yordamchi. AI-yordamchilar, Telegram bot va veb-sayt avtomatlashtirish." %}
+                </p>
+            </div>
+            <div class="footer-social">
+                {% if settings.telegram_url %}<a href="{{ settings.telegram_url }}" target="_blank" rel="noopener">✈️</a>{% endif %}
+                {% if settings.instagram_url %}<a href="{{ settings.instagram_url }}" target="_blank" rel="noopener">📷</a>{% endif %}
+                {% if settings.facebook_url %}<a href="{{ settings.facebook_url }}" target="_blank" rel="noopener">📘</a>{% endif %}
+                {% if settings.linkedin_url %}<a href="{{ settings.linkedin_url }}" target="_blank" rel="noopener">💼</a>{% endif %}
+                {% if settings.youtube_url %}<a href="{{ settings.youtube_url }}" target="_blank" rel="noopener">▶️</a>{% endif %}
+                {% if settings.x_url %}<a href="{{ settings.x_url }}" target="_blank" rel="noopener">✕</a>{% endif %}
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© {% now "Y" %} Saidex</span>
+            {% if settings.admin_phone %}<span>{{ settings.admin_phone }}</span>{% endif %}
+            {% if settings.admin_telegram_username %}<span>{{ settings.admin_telegram_username }}</span>{% endif %}
+        </div>
+    </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var sw = document.querySelector("[data-lang-switcher]");
+    var toggle = document.querySelector("[data-lang-toggle]");
+    if (sw && toggle) {
+        toggle.addEventListener("click", function (e) {
+            e.stopPropagation();
+            sw.classList.toggle("open");
+        });
+        document.addEventListener("click", function () { sw.classList.remove("open"); });
+    }
+
+    var themeBtn = document.querySelector("[data-theme-toggle]");
+    if (themeBtn) {
+        function updateThemeIcon() {
+            var theme = document.documentElement.getAttribute("data-theme") || "dark";
+            themeBtn.textContent = theme === "light" ? "🌙" : "☀️";
+        }
+        updateThemeIcon();
+        themeBtn.addEventListener("click", function () {
+            var current = document.documentElement.getAttribute("data-theme") || "dark";
+            var next = current === "light" ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", next);
+            try { localStorage.setItem("saidex_landing_theme", next); } catch (e) { /* noop */ }
+            updateThemeIcon();
+        });
+    }
+});
+</script>
+<script src="{% static 'landing/demo.js' %}?v=2"></script>
+</body>
+</html>

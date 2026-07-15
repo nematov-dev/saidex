@@ -1,0 +1,33 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Sayt sozlamalari" %}</h3>
+<div class="card stat-card p-4" style="max-width: 640px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">{% trans "Logotip" %}</label>
+            {{ form.logo }}
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">{% trans "Telefon" %}</label>
+                {{ form.admin_phone }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">{% trans "Telegram" %}</label>
+                {{ form.admin_telegram_username }}
+            </div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6"><label class="form-label small">Instagram</label>{{ form.instagram_url }}</div>
+            <div class="col-md-6"><label class="form-label small">Telegram (kanal)</label>{{ form.telegram_url }}</div>
+            <div class="col-md-6"><label class="form-label small">LinkedIn</label>{{ form.linkedin_url }}</div>
+            <div class="col-md-6"><label class="form-label small">Facebook</label>{{ form.facebook_url }}</div>
+            <div class="col-md-6"><label class="form-label small">YouTube</label>{{ form.youtube_url }}</div>
+            <div class="col-md-6"><label class="form-label small">X (Twitter)</label>{{ form.x_url }}</div>
+        </div>
+        <button class="btn btn-dark" type="submit">{% trans "Saqlash" %}</button>
+    </form>
+</div>
+{% endblock %}

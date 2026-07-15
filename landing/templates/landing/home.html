@@ -1,0 +1,206 @@
+{% extends "landing/base.html" %}
+{% load i18n %}
+{% block content %}
+
+<section class="landing-hero">
+    <div class="container">
+        <span class="eyebrow">🤖 {% trans "AI yechimlar" %}</span>
+        <h1 style="margin-top:1.25rem;">{% trans "Biznesingiz uchun sun'iy intellekt yechimlari" %}</h1>
+        <p>{% trans "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati. Mijozlaringiz bilan 24/7 muloqot qiluvchi AI yarating." %}</p>
+        <div class="cta-row">
+            <a href="#contact" class="btn btn-primary">{% trans "Bepul konsultatsiya olish" %}</a>
+            <a href="#services" class="btn btn-outline">{% trans "Xizmatlarni ko'rish" %}</a>
+        </div>
+    </div>
+</section>
+
+<section id="services">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">{% trans "Xizmatlarimiz" %}</span>
+            <h2 class="section-title" style="margin-top:.75rem;">{% trans "Biznesingiz uchun to'liq AI ekotizimi" %}</h2>
+            <p class="section-subtitle">{% trans "Hujjatlaringiz asosida o'qitilgan AI — Telegram, veb-sayt va admin panelda birgalikda ishlaydi." %}</p>
+        </div>
+        <div class="landing-grid grid-3">
+            <div class="card service-card">
+                <div class="icon">💬</div>
+                <h3>{% trans "AI-yordamchi" %}</h3>
+                <p>{% trans "Hujjatlaringiz (PDF, Word, matn) asosida o'qitilgan AI — faqat rost va aniq ma'lumot beradi, o'zidan uydirib javob bermaydi." %}</p>
+            </div>
+            <div class="card service-card">
+                <div class="icon">📨</div>
+                <h3>{% trans "Telegram orqali avtomatlashtirish" %}</h3>
+                <p>{% trans "Telegram akkaunt orqali mijozlar bilan avtomatik muloqot: savollarga javob, buyurtma qabul qilish, ariza yig'ish." %}</p>
+            </div>
+            <div class="card service-card">
+                <div class="icon">🌐</div>
+                <h3>{% trans "Veb-sayt uchun AI-chat" %}</h3>
+                <p>{% trans "Saytingizga o'rnatiladigan AI-chat oynasi — tashrif buyuruvchilar bilan real vaqtda muloqot qiladi." %}</p>
+            </div>
+            <div class="card service-card">
+                <div class="icon">🗂️</div>
+                <h3>{% trans "Boshqaruv paneli" %}</h3>
+                <p>{% trans "Hujjatlarni yuklash, AI javoblarini sozlash, mijozlar arizalarini (CRM) ko'rish uchun qulay veb-panel." %}</p>
+            </div>
+            <div class="card service-card">
+                <div class="icon">🎯</div>
+                <h3>{% trans "Lidlarni avtomatik yig'ish" %}</h3>
+                <p>{% trans "Mijoz xarid niyatini bildirsa, AI avtomatik ism va telefon so'rab, arizani sizga CRM tarzida taqdim etadi." %}</p>
+            </div>
+            <div class="card service-card">
+                <div class="icon">📊</div>
+                <h3>{% trans "Analitika va hisobotlar" %}</h3>
+                <p>{% trans "Necha kishi murojaat qildi, nechta savolga AI javob berdi, nechta ariza tushdi — barchasi panelda ko'rinadi." %}</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="demo" style="background: var(--bg-elevated);">
+    <div class="container">
+        <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto;">
+            <span class="eyebrow">🎙️ {% trans "Sinab ko'ring" %}</span>
+            <h2 class="section-title" style="margin-top:.75rem;">{% trans "AI qanday ishlashini o'zingiz sinab ko'ring" %}</h2>
+            <p class="section-subtitle" style="margin-left:auto; margin-right:auto;">
+                {% trans "Xuddi Telegram'dagi kabi — ovozli xabar yozing, AI matn ko'rinishida javob beradi." %}
+            </p>
+        </div>
+        <div class="card demo-card" style="max-width:460px; margin:0 auto;">
+            <button type="button" class="demo-mic-btn" data-demo-mic title="{% trans "Bosib gapiring" %}">
+                <span class="demo-mic-ring"></span>
+                <span class="demo-mic-ring"></span>
+                <svg class="demo-mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" fill="currentColor"/>
+                    <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <div>
+                <strong data-demo-status>{% trans "Bosib, savolingizni ayting yoki pastda yozing" %}</strong>
+            </div>
+            <div class="demo-chat" data-demo-chat>
+                <div class="demo-messages" data-demo-messages></div>
+                <form class="demo-input-row" data-demo-form>
+                    <input type="text" class="form-control" data-demo-input placeholder="{% trans "Xabar yozing..." %}" autocomplete="off">
+                    <button type="submit" class="btn btn-primary btn-sm" data-demo-send>{% trans "Yuborish" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if tariffs %}
+<section id="tariffs">
+    <div class="container">
+        <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto;">
+            <span class="eyebrow">{% trans "Tariflar" %}</span>
+            <h2 class="section-title" style="margin-top:.75rem;">{% trans "Biznesingizga mos tarifni tanlang" %}</h2>
+        </div>
+        <div class="landing-grid grid-3">
+            {% for tariff in tariffs %}
+            <div class="card tariff-card {% if tariff.is_featured %}featured{% endif %}">
+                {% if tariff.is_featured %}<span class="badge-featured">{% trans "Ommabop" %}</span>{% endif %}
+                <h3>{{ tariff.name }}</h3>
+                <div class="price">{{ tariff.price }} <small>/ {{ tariff.get_period_display }}</small></div>
+                <ul>
+                    {% for feature in tariff.feature_list %}
+                        <li>{{ feature }}</li>
+                    {% endfor %}
+                </ul>
+                <a href="#contact" class="btn {% if tariff.is_featured %}btn-primary{% else %}btn-outline{% endif %} btn-block">
+                    {% trans "Buyurtma berish" %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if portfolio_items %}
+<section id="portfolio" style="background: var(--bg-elevated);">
+    <div class="container">
+        <div class="section-head">
+            <span class="eyebrow">{% trans "Portfolio" %}</span>
+            <h2 class="section-title" style="margin-top:.75rem;">{% trans "Qilingan ishlarimiz" %}</h2>
+        </div>
+        <div class="landing-grid grid-3">
+            {% for item in portfolio_items %}
+            <a href="{{ item.url|default:'#' }}" class="card portfolio-card" {% if item.url %}target="_blank" rel="noopener"{% endif %}>
+                {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}">{% endif %}
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if testimonials %}
+<section id="testimonials">
+    <div class="container">
+        <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto;">
+            <span class="eyebrow">{% trans "Mijozlar fikri" %}</span>
+            <h2 class="section-title" style="margin-top:.75rem;">{% trans "Bizga ishonishadi" %}</h2>
+        </div>
+        <div class="landing-grid grid-3">
+            {% for t in testimonials %}
+            <div class="card testimonial-card">
+                <p>&ldquo;{{ t.text }}&rdquo;</p>
+                <div class="testimonial-author">
+                    <div class="avatar">
+                        {% if t.avatar %}<img src="{{ t.avatar.url }}" alt="{{ t.author_name }}">{% else %}{{ t.author_name|first|upper }}{% endif %}
+                    </div>
+                    <div>
+                        <div class="name">{{ t.author_name }}</div>
+                        {% if t.author_role %}<div class="role">{{ t.author_role }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section id="contact" style="background: var(--bg-elevated);">
+    <div class="container">
+        <div class="contact-grid">
+            <div>
+                <span class="eyebrow">{% trans "Aloqa" %}</span>
+                <h2 class="section-title" style="margin-top:.75rem;">{% trans "Loyihangizni muhokama qilaylik" %}</h2>
+                <p class="section-subtitle" style="margin-bottom:2rem;">
+                    {% trans "Ismingiz va telefon raqamingizni qoldiring — tez orada siz bilan bog'lanamiz." %}
+                </p>
+                {% if settings.admin_phone %}
+                <div class="contact-info-item">
+                    <span class="icon">📞</span>
+                    <a href="tel:{{ settings.admin_phone }}">{{ settings.admin_phone }}</a>
+                </div>
+                {% endif %}
+                {% if settings.admin_telegram_username %}
+                <div class="contact-info-item">
+                    <span class="icon">✈️</span>
+                    <a href="https://t.me/{{ settings.admin_telegram_username|cut:'@' }}" target="_blank" rel="noopener">{{ settings.admin_telegram_username }}</a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post" action="{% url 'landing:contact' %}">
+                    {% csrf_token %}
+                    <div style="margin-bottom:1rem;">{{ contact_form.full_name }}</div>
+                    <div style="margin-bottom:1rem;">{{ contact_form.phone }}</div>
+                    <div style="margin-bottom:1.25rem;">{{ contact_form.message }}</div>
+                    <button type="submit" class="btn btn-success btn-block">{% trans "Ariza qoldirish" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

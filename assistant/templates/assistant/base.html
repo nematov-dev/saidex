@@ -1,0 +1,266 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ BUSINESS_NAME }} — {% trans "Admin panel" %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem("saidex_theme");
+                if (theme) document.documentElement.setAttribute("data-bs-theme", theme);
+                if (localStorage.getItem("saidex_sidebar_collapsed") === "1") {
+                    document.documentElement.setAttribute("data-sidebar-collapsed", "1");
+                }
+            } catch (e) { /* noop */ }
+        })();
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="{% static 'assistant/app.css' %}" rel="stylesheet">
+    <style>
+        :root {
+            --topbar-bg: #ffffff;
+            --border-color: #e5e7eb;
+        }
+        html[data-bs-theme="dark"] {
+            --topbar-bg: #1a2032;
+            --border-color: #2d3748;
+        }
+        html[data-bs-theme="dark"] body,
+        html[data-bs-theme="dark"] .content-area {
+            background: #0f1420;
+        }
+        html[data-bs-theme="dark"] .sidebar {
+            background: #05070c;
+        }
+        body {
+            background: #f5f6fa;
+            font-family: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .bi { margin-inline-end: .45rem; }
+        .sidebar {
+            min-height: 100vh;
+            background: #111827;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar a {
+            color: #9ca3af;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: .6rem .9rem;
+            border-radius: .55rem;
+            font-size: .93rem;
+            transition: background .15s ease, color .15s ease;
+        }
+        .sidebar a:hover { background: #1f2937; color: #f3f4f6; }
+        .sidebar a.active { background: #4f46e5; color: #fff; font-weight: 600; }
+        .brand {
+            display: flex; align-items: center; gap: .6rem;
+            font-weight: 700; font-size: 1.05rem;
+            color: #fff;
+        }
+        .brand .brand-icon {
+            width: 34px; height: 34px; border-radius: .6rem;
+            background: #4f46e5; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .brand .brand-icon .bi { margin: 0; }
+        .nav-section-label {
+            font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
+            color: #6b7280; padding: 0 .9rem; margin: .9rem 0 .3rem;
+        }
+        .stat-card { border: 0; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        .content-area h3 { font-weight: 700; }
+        .content-area { min-height: calc(100vh - 57px); }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <div class="sidebar p-3" style="width: 250px;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="brand">
+                <span class="brand-icon"><i class="bi bi-robot"></i></span>
+                <span class="brand-text">{{ BUSINESS_NAME }}</span>
+            </div>
+            <button class="sidebar-toggle-btn" data-sidebar-toggle type="button"
+                    title="{% trans 'Menyuni kichraytirish' %}">
+                <i class="bi bi-layout-sidebar-inset"></i>
+            </button>
+        </div>
+
+        <div class="nav-section-label">{% trans "Asosiy" %}</div>
+        <nav class="nav flex-column gap-1">
+            <a href="{% url 'assistant:dashboard' %}"
+               class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i> <span class="nav-label">{% trans "Bosh sahifa" %}</span>
+            </a>
+            <a href="{% url 'assistant:documents' %}"
+               class="{% if request.resolver_match.url_name == 'documents' %}active{% endif %}">
+                <i class="bi bi-file-earmark-text"></i> <span class="nav-label">{% trans "Hujjatlar" %}</span>
+            </a>
+            <a href="{% url 'assistant:leads' %}"
+               class="{% if request.resolver_match.url_name == 'leads' or request.resolver_match.url_name == 'leads_archive' %}active{% endif %}">
+                <i class="bi bi-inbox"></i> <span class="nav-label">{% trans "Arizalar" %}</span>
+            </a>
+            <a href="{% url 'assistant:groups' %}"
+               class="{% if request.resolver_match.url_name == 'groups' %}active{% endif %}">
+                <i class="bi bi-people"></i> <span class="nav-label">{% trans "Guruhlar" %}</span>
+            </a>
+        </nav>
+
+        <div class="nav-section-label">{% trans "Sozlamalar" %}</div>
+        <nav class="nav flex-column gap-1">
+            <a href="{% url 'assistant:prompt_settings' %}"
+               class="{% if request.resolver_match.url_name == 'prompt_settings' %}active{% endif %}">
+                <i class="bi bi-sliders"></i> <span class="nav-label">{% trans "AI sozlamalari" %}</span>
+            </a>
+        </nav>
+
+        <div class="nav-section-label">Saidex</div>
+        <nav class="nav flex-column gap-1">
+            <a href="{% url 'assistant:saidex_tariffs' %}"
+               class="{% if request.resolver_match.url_name == 'saidex_tariffs' %}active{% endif %}">
+                <i class="bi bi-tags"></i> <span class="nav-label">{% trans "Tariflar" %}</span>
+            </a>
+            <a href="{% url 'assistant:saidex_portfolio' %}"
+               class="{% if request.resolver_match.url_name == 'saidex_portfolio' %}active{% endif %}">
+                <i class="bi bi-images"></i> <span class="nav-label">{% trans "Qilingan ishlar" %}</span>
+            </a>
+            <a href="{% url 'assistant:saidex_testimonials' %}"
+               class="{% if request.resolver_match.url_name == 'saidex_testimonials' %}active{% endif %}">
+                <i class="bi bi-chat-quote"></i> <span class="nav-label">{% trans "Mijozlar fikri" %}</span>
+            </a>
+            <a href="{% url 'assistant:saidex_settings' %}"
+               class="{% if request.resolver_match.url_name == 'saidex_settings' %}active{% endif %}">
+                <i class="bi bi-globe"></i> <span class="nav-label">{% trans "Sayt sozlamalari" %}</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="flex-grow-1 d-flex flex-column">
+        <div class="topbar">
+            <div class="d-flex align-items-center gap-2">
+                <button class="theme-toggle-btn" data-theme-toggle type="button" title="{% trans 'Mavzu' %}">
+                    <i class="bi bi-moon-stars"></i>
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                {% get_current_language as CURRENT_LANGUAGE %}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button"
+                            data-bs-toggle="dropdown">
+                        <span class="flag-icon">
+                            {% if CURRENT_LANGUAGE == 'ru' %}🇷🇺{% elif CURRENT_LANGUAGE == 'en' %}🇬🇧{% else %}🇺🇿{% endif %}
+                        </span>
+                        {{ CURRENT_LANGUAGE|upper }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <form action="{% url 'set_language' %}" method="post" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="dropdown-item lang-item d-flex align-items-center gap-2 {% if CURRENT_LANGUAGE == 'uz' %}active{% endif %}"
+                                        type="submit" name="language" value="uz"><span class="flag-icon">🇺🇿</span> O'zbekcha</button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{% url 'set_language' %}" method="post" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="dropdown-item lang-item d-flex align-items-center gap-2 {% if CURRENT_LANGUAGE == 'ru' %}active{% endif %}"
+                                        type="submit" name="language" value="ru"><span class="flag-icon">🇷🇺</span> Русский</button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{% url 'set_language' %}" method="post" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="dropdown-item lang-item d-flex align-items-center gap-2 {% if CURRENT_LANGUAGE == 'en' %}active{% endif %}"
+                                        type="submit" name="language" value="en"><span class="flag-icon">🇬🇧</span> English</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <button class="profile-menu-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <span class="profile-avatar">{{ request.user.get_username|first|upper }}</span>
+                        <span class="d-none d-md-inline">{{ request.user.get_username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
+                               href="{% url 'assistant:profile' %}">
+                                <i class="bi bi-person-circle"></i> {% trans "Profil" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if request.resolver_match.url_name == 'telegram_status' %}active{% endif %}"
+                               href="{% url 'assistant:telegram_status' %}">
+                                <i class="bi bi-telephone"></i> {% trans "Telegram akkaunt" %}
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            {% trans "Rostdan chiqmoqchimisiz?" as logout_confirm %}
+                            <form method="post" action="{% url 'assistant:logout' %}"
+                                  data-confirm="{{ logout_confirm }}">
+                                {% csrf_token %}
+                                <button class="dropdown-item text-danger" type="submit">
+                                    <i class="bi bi-box-arrow-right"></i> {% trans "Chiqish" %}
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area p-4 flex-grow-1">
+            {% if not subscription.is_service_active %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {% trans "Obuna muddati tugadi." %}
+                    {% trans "Uzaytirish uchun adminlarga bog'laning." %}
+                </div>
+            {% elif subscription.days_left <= 5 %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-clock"></i>
+                    {% blocktrans with days_left=subscription.days_left %}Obuna muddati {{ days_left }} kundan so'ng tugaydi.{% endblocktrans %}
+                </div>
+            {% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body p-4 text-center">
+                <p class="mb-4" id="confirmActionMessage"></p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-success px-4" data-bs-dismiss="modal">{% trans "Yo'q" %}</button>
+                    <button type="button" class="btn btn-danger px-4" id="confirmActionYesBtn">{% trans "Ha" %}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'assistant/app.js' %}?v=2"></script>
+</body>
+</html>

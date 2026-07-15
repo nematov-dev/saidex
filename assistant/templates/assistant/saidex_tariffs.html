@@ -1,0 +1,52 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Tariflar" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <h6>{% trans "Yangi tarif qo'shish" %}</h6>
+    <form method="post" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-3">{{ form.name }}</div>
+        <div class="col-md-2">{{ form.price }}</div>
+        <div class="col-md-2">{{ form.period }}</div>
+        <div class="col-md-3">{{ form.features }}</div>
+        <div class="col-md-1 d-flex align-items-center gap-1">
+            {{ form.is_featured }} <label class="form-check-label small">{% trans "Ommabop" %}</label>
+        </div>
+        <div class="col-md-1"><button class="btn btn-dark w-100" type="submit">{% trans "Qo'shish" %}</button></div>
+    </form>
+</div>
+
+<div class="card stat-card p-3">
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr>
+                <th>{% trans "Nomi" %}</th><th>{% trans "Narxi" %}</th><th>{% trans "Davri" %}</th>
+                <th>{% trans "Ommabop" %}</th><th>{% trans "Tartib" %}</th><th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for tariff in tariffs %}
+            <tr>
+                <td>{{ tariff.name }}</td>
+                <td>{{ tariff.price }}</td>
+                <td>{{ tariff.get_period_display }}</td>
+                <td>{% if tariff.is_featured %}<span class="badge bg-primary">{% trans "Ha" %}</span>{% else %}—{% endif %}</td>
+                <td>{{ tariff.order }}</td>
+                <td class="text-end">
+                    {% trans "Tarifni o'chirishga ishonchingiz komilmi?" as confirm_delete %}
+                    <form method="post" action="{% url 'assistant:saidex_tariff_delete' tariff.pk %}" class="d-inline" data-confirm="{{ confirm_delete }}">
+                        {% csrf_token %}<button class="btn btn-sm btn-outline-danger">{% trans "O'chirish" %}</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Hozircha tarif qo'shilmagan" %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

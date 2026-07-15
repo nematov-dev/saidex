@@ -1,0 +1,44 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Mijozlar fikri" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <h6>{% trans "Yangi fikr qo'shish" %}</h6>
+    <form method="post" enctype="multipart/form-data" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-3">{{ form.author_name }}</div>
+        <div class="col-md-2">{{ form.author_role }}</div>
+        <div class="col-md-4">{{ form.text }}</div>
+        <div class="col-md-2">{{ form.avatar }}</div>
+        <div class="col-md-1"><button class="btn btn-dark w-100" type="submit">{% trans "Qo'shish" %}</button></div>
+    </form>
+</div>
+
+<div class="card stat-card p-3">
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr><th>{% trans "Ism" %}</th><th>{% trans "Lavozimi" %}</th><th>{% trans "Matn" %}</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for t in testimonials %}
+            <tr>
+                <td>{{ t.author_name }}</td>
+                <td>{{ t.author_role|default:"—" }}</td>
+                <td style="max-width:320px;">{{ t.text|truncatechars:80 }}</td>
+                <td class="text-end">
+                    {% trans "Bu fikrni o'chirishga ishonchingiz komilmi?" as confirm_delete %}
+                    <form method="post" action="{% url 'assistant:saidex_testimonial_delete' t.pk %}" class="d-inline" data-confirm="{{ confirm_delete }}">
+                        {% csrf_token %}<button class="btn btn-sm btn-outline-danger">{% trans "O'chirish" %}</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">{% trans "Hozircha fikr qo'shilmagan" %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

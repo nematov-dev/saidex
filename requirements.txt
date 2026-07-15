@@ -1,0 +1,14 @@
+Django==5.2.16
+psycopg2-binary==2.9.10
+pgvector==0.3.6
+djangorestframework==3.15.2
+python-dotenv==1.0.1
+telethon==1.44.0
+google-cloud-aiplatform==1.71.1
+pypdf==5.1.0
+python-docx==1.1.2
+requests==2.32.3
+gunicorn==23.0.0
+openpyxl==3.1.5
+Pillow==11.0.0
+redis==8.0.1

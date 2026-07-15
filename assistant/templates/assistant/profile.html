@@ -1,0 +1,38 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Profil" %}</h3>
+
+<div class="card stat-card p-4 mb-4" style="max-width: 480px;">
+    <h6>{% trans "Hisob ma'lumotlari" %}</h6>
+    <p class="text-muted mb-0">{% trans "Foydalanuvchi nomi:" %} <strong>{{ request.user.get_username }}</strong></p>
+</div>
+
+<div class="card stat-card p-4" style="max-width: 480px;">
+    <h6>{% trans "Parolni o'zgartirish" %}</h6>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">{% trans "Joriy parol" %}</label>
+            {{ form.old_password }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">{% trans "Yangi parol" %}</label>
+            {{ form.new_password1 }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">{% trans "Yangi parol (tasdiqlash)" %}</label>
+            {{ form.new_password2 }}
+        </div>
+        {% if form.errors %}
+            <div class="alert alert-danger small">
+                {% for field in form %}
+                    {% for error in field.errors %}<div>{{ error }}</div>{% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+        {% endif %}
+        <button class="btn btn-dark" type="submit">{% trans "Parolni saqlash" %}</button>
+    </form>
+</div>
+{% endblock %}

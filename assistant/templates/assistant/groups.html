@@ -1,0 +1,83 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Guruhlar" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <h6>{% trans "Guruh uchun kalit so'zlar" %}</h6>
+    <p class="text-muted small mb-3">
+        {% blocktrans %}"Kalit so'z bilan" rejimidagi guruhlarda AI faqat shu so'zlar yozilganda javob beradi
+        (masalan{% endblocktrans %} <code>/ai</code>, <code>ai</code>, <code>#savol</code>, <code>/savol</code>, <code>savol</code> —
+        {% trans "prefikslar avtomatik tanib olinadi, faqat asosiy so'zni pastda vergul bilan yozing)." %}
+    </p>
+    <form method="post" action="{% url 'assistant:groups' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_keywords">
+        <input type="text" name="group_trigger_keywords" class="form-control"
+               value="{{ config.group_trigger_keywords }}" placeholder="ai,savol">
+        <button class="btn btn-dark">{% trans "Saqlash" %}</button>
+    </form>
+</div>
+
+<div class="card stat-card p-3">
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr>
+                <th>{% trans "Guruh" %}</th>
+                <th>Chat ID</th>
+                <th>{% trans "AI yoqilganmi" %}</th>
+                <th>{% trans "Javob berish tartibi" %}</th>
+                <th>{% trans "Kimga javob berish" %}</th>
+                <th>{% trans "Oxirgi faollik" %}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for group in groups %}
+            <tr>
+                <td class="fw-semibold">
+                    {% trans "(nomsiz guruh)" as untitled_group %}
+                    {{ group.title|default:untitled_group }}
+                    <form id="group-form-{{ group.pk }}" method="post"
+                          action="{% url 'assistant:group_update' group.pk %}" class="d-none">
+                        {% csrf_token %}
+                    </form>
+                </td>
+                <td class="text-muted">{{ group.chat_id }}</td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_ai_enabled"
+                               form="group-form-{{ group.pk }}"
+                               {% if group.is_ai_enabled %}checked{% endif %}>
+                    </div>
+                </td>
+                <td style="min-width: 220px;">
+                    <select name="reply_mode" form="group-form-{{ group.pk }}" class="form-select form-select-sm">
+                        {% for value, label in group.REPLY_MODE_CHOICES %}
+                            <option value="{{ value }}" {% if group.reply_mode == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td style="min-width: 220px;">
+                    <select name="sender_filter" form="group-form-{{ group.pk }}" class="form-select form-select-sm">
+                        {% for value, label in group.SENDER_FILTER_CHOICES %}
+                            <option value="{{ value }}" {% if group.sender_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td class="text-muted">{{ group.last_seen_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" form="group-form-{{ group.pk }}">{% trans "Saqlash" %}</button>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">
+                {% trans "Hozircha hech qanday guruh topilmadi. Telegram akkauntingizni biror guruhga qo'shing va u yerga bitta xabar yozing — guruh avtomatik shu ro'yxatga qo'shiladi." %}
+            </td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Saidex AI Agent — Telegram userbot (Telethon)
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/saidex_ai_agent
+EnvironmentFile=/opt/saidex_ai_agent/.env
+ExecStart=/opt/saidex_ai_agent/venv/bin/python userbot/run.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

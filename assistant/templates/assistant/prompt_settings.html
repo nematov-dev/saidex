@@ -1,0 +1,32 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "AI sozlamalari" %}</h3>
+<div class="card stat-card p-4" style="max-width: 780px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">{% trans "AI qanday javob berishi kerak" %}</label>
+            <div class="form-text mb-2">
+                {% blocktrans %}Biznes haqida ma'lumot, salomlashish uslubi, xarid/ariza so'ralganda qanday
+                javob berish kerakligi va hokazo — hammasi shu yagona matn ichida yoziladi.
+                AI faqat shu ko'rsatma va yuklangan hujjatlar asosida javob beradi.{% endblocktrans %}
+            </div>
+            {{ form.system_prompt }}
+        </div>
+        <div class="form-check mb-3">
+            {{ form.ai_enabled }}
+            <label class="form-check-label">{% trans "AI yoqilgan" %}</label>
+            {% if not subscription.is_service_active %}
+                <div class="form-text text-danger">
+                    {% trans "AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning." %}
+                </div>
+            {% endif %}
+        </div>
+        <button class="btn btn-dark" type="submit">{% trans "Saqlash" %}</button>
+    </form>
+</div>
+<p class="text-muted small mt-3">
+    {% trans "Boshqa, kamdan-kam o'zgartiriladigan sozlamalar (biznes nomi va hokazo) uchun developer bilan bog'laning." %}
+</p>
+{% endblock %}

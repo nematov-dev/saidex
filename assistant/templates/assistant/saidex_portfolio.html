@@ -1,0 +1,44 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Qilingan ishlar" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <h6>{% trans "Yangi ish qo'shish" %}</h6>
+    <form method="post" enctype="multipart/form-data" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-3">{{ form.title }}</div>
+        <div class="col-md-3">{{ form.description }}</div>
+        <div class="col-md-3">{{ form.image }}</div>
+        <div class="col-md-2">{{ form.url }}</div>
+        <div class="col-md-1"><button class="btn btn-dark w-100" type="submit">{% trans "Qo'shish" %}</button></div>
+    </form>
+</div>
+
+<div class="card stat-card p-3">
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr><th>{% trans "Rasm" %}</th><th>{% trans "Nomi" %}</th><th>{% trans "Tavsif" %}</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td>{% if item.image %}<img src="{{ item.image.url }}" style="width:64px;height:40px;object-fit:cover;border-radius:.4rem;">{% else %}—{% endif %}</td>
+                <td>{{ item.title }}</td>
+                <td style="max-width:320px;">{{ item.description|truncatechars:80 }}</td>
+                <td class="text-end">
+                    {% trans "Ishni o'chirishga ishonchingiz komilmi?" as confirm_delete %}
+                    <form method="post" action="{% url 'assistant:saidex_portfolio_delete' item.pk %}" class="d-inline" data-confirm="{{ confirm_delete }}">
+                        {% csrf_token %}<button class="btn btn-sm btn-outline-danger">{% trans "O'chirish" %}</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">{% trans "Hozircha ish qo'shilmagan" %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

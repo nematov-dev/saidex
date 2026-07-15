@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+media/
+staticfiles/
+*.sqlite3
+.env
+.pytest_cache/
+outputs/

@@ -1,0 +1,811 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-10 00:00+0000\n"
+"PO-Revision-Date: 2026-07-10 00:00+0000\n"
+"Language-Team: en\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "AI qanday ishlashini o'zingiz sinab ko'ring"
+msgstr "See for yourself how the AI works"
+
+msgid "Biznesingiz uchun sun'iy intellekt yechimlari"
+msgstr "Artificial intelligence solutions for your business"
+
+msgid "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati. Mijozlaringiz bilan 24/7 muloqot qiluvchi AI yarating."
+msgstr "Saidex — a service for AI assistants, Telegram bots, and website automation. Create an AI that talks with your customers 24/7."
+
+msgid "AI yechimlar"
+msgstr "AI solutions"
+
+msgid "AI-yordamchi"
+msgstr "AI assistant"
+
+msgid "Aloqa"
+msgstr "Contact"
+
+msgid "Analitika va hisobotlar"
+msgstr "Analytics and reports"
+
+msgid "Ariza qoldirish"
+msgstr "Submit request"
+
+msgid "Bepul konsultatsiya olish"
+msgstr "Get a free consultation"
+
+msgid "Bizga ishonishadi"
+msgstr "They trust us"
+
+msgid "Biznesingiz uchun AI yechimlari"
+msgstr "AI solutions for your business"
+
+msgid "Biznesingiz uchun to'liq AI ekotizimi"
+msgstr "A complete AI ecosystem for your business"
+
+msgid "Biznesingizga mos tarifni tanlang"
+msgstr "Choose the plan that fits your business"
+
+msgid "Bog'lanish"
+msgstr "Contact us"
+
+msgid "Bosib gapiring"
+msgstr "Press and speak"
+
+msgid "Bosib, savolingizni ayting yoki pastda yozing"
+msgstr "Press to ask by voice, or type below"
+
+msgid "Buyurtma berish"
+msgstr "Order"
+
+msgid "Hujjatlaringiz (PDF, Word, matn) asosida o'qitilgan AI — faqat rost va aniq ma'lumot beradi, o'zidan uydirib javob bermaydi."
+msgstr "AI trained on your documents (PDF, Word, text) — gives only truthful, accurate information, never makes things up."
+
+msgid "Hujjatlaringiz asosida o'qitilgan AI — Telegram, veb-sayt va admin panelda birgalikda ishlaydi."
+msgstr "AI trained on your documents — works together across Telegram, your website, and the admin panel."
+
+msgid "Hujjatlarni yuklash, AI javoblarini sozlash, mijozlar arizalarini (CRM) ko'rish uchun qulay veb-panel."
+msgstr "A convenient web panel for uploading documents, configuring AI responses, and viewing customer leads (CRM)."
+
+msgid "Ishlarimiz"
+msgstr "Our work"
+
+msgid "Ismingiz va telefon raqamingizni qoldiring — tez orada siz bilan bog'lanamiz."
+msgstr "Leave your name and phone number — we'll get back to you shortly."
+
+msgid "Kun/tun rejimi"
+msgstr "Day/night mode"
+
+msgid "Lidlarni avtomatik yig'ish"
+msgstr "Automatic lead collection"
+
+msgid "Loyihangizni muhokama qilaylik"
+msgstr "Let's discuss your project"
+
+msgid "Mijoz xarid niyatini bildirsa, AI avtomatik ism va telefon so'rab, arizani sizga CRM tarzida taqdim etadi."
+msgstr "If a customer shows buying intent, the AI automatically asks for their name and phone number and delivers the lead to you as a CRM entry."
+
+msgid "Mijozlar fikri"
+msgstr "Customer testimonials"
+
+msgid "Necha kishi murojaat qildi, nechta savolga AI javob berdi, nechta ariza tushdi — barchasi panelda ko'rinadi."
+msgstr "How many people reached out, how many questions the AI answered, how many leads came in — all visible in the panel."
+
+msgid "Ommabop"
+msgstr "Popular"
+
+msgid "Portfolio"
+msgstr "Portfolio"
+
+msgid "Qilingan ishlarimiz"
+msgstr "Our completed projects"
+
+msgid "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati."
+msgstr "Saidex — a service for AI assistants, Telegram bots, and website automation."
+
+msgid "Saidex — biznesingiz uchun ishonchli, doimiy ishlaydigan AI-yordamchi. AI-yordamchilar, Telegram bot va veb-sayt avtomatlashtirish."
+msgstr "Saidex — a reliable, always-on AI assistant for your business. AI assistants, Telegram bot, and website automation."
+
+msgid "Saytingizga o'rnatiladigan AI-chat oynasi — tashrif buyuruvchilar bilan real vaqtda muloqot qiladi."
+msgstr "An AI chat window installed on your website — chats with visitors in real time."
+
+msgid "Sinab ko'ring"
+msgstr "Try it out"
+
+msgid "Tariflar"
+msgstr "Pricing"
+
+msgid "Telegram akkaunt orqali mijozlar bilan avtomatik muloqot: savollarga javob, buyurtma qabul qilish, ariza yig'ish."
+msgstr "Automatic customer communication via a Telegram account: answering questions, taking orders, collecting leads."
+
+msgid "Telegram orqali avtomatlashtirish"
+msgstr "Telegram automation"
+
+msgid "Veb-sayt uchun AI-chat"
+msgstr "AI chat for your website"
+
+msgid "Xabar yozing..."
+msgstr "Type a message..."
+
+msgid "Xizmatlar"
+msgstr "Services"
+
+msgid "Xizmatlarimiz"
+msgstr "Our services"
+
+msgid "Xizmatlarni ko'rish"
+msgstr "View services"
+
+msgid "Xuddi Telegram'dagi kabi — ovozli xabar yozing, AI matn ko'rinishida javob beradi."
+msgstr "Just like in Telegram — record a voice message, the AI replies in text."
+
+msgid "Yuborish"
+msgstr "Send"
+
+msgid ""
+"\"Kalit so'z bilan\" rejimidagi guruhlarda AI faqat shu so'zlar yozilganda javob beradi\n"
+"        (masalan"
+msgstr ""
+"In \"keyword\" mode groups, the AI replies only when one of these words is used\n"
+"        (for example"
+
+msgid "'%(name)s' guruh sozlamalari yangilandi."
+msgstr "Settings for group '%(name)s' updated."
+
+msgid "'%(title)s' muvaffaqiyatli qo'shildi (%(chunks)s bo'lak)."
+msgstr "'%(title)s' successfully added (%(chunks)s chunks)."
+
+msgid "(nomsiz guruh)"
+msgstr "(untitled group)"
+
+msgid "Chiqish"
+msgstr "Logout"
+
+msgid "Ha"
+msgstr "Yes"
+
+msgid "Yo'q"
+msgstr "No"
+
+msgid "Rostdan chiqmoqchimisiz?"
+msgstr "Are you sure you want to log out?"
+
+msgid "Boshqa miqdor"
+msgstr "Custom amount"
+
+msgid "Noto'g'ri muddat kiritildi."
+msgstr "Invalid duration entered."
+
+msgid "oy"
+msgstr "months"
+
+msgid "AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning."
+msgstr "To turn on the AI, get a subscription first — contact the admins."
+
+msgid "Obuna muddati tugadi."
+msgstr "Subscription has expired."
+
+msgid "Qo'shish"
+msgstr "Add"
+
+msgid "Uzaytirish uchun adminlarga bog'laning."
+msgstr "Contact the admins to extend it."
+
+msgid "Sozlamalar"
+msgstr "Settings"
+
+msgid "2FA parol"
+msgstr "2FA password"
+
+msgid "2FA parol kutilmoqda"
+msgstr "Waiting for 2FA password"
+
+msgid "AI javob bergan (7 kun)"
+msgstr "AI answered (7 days)"
+
+msgid "AI modeli"
+msgstr "AI model"
+
+msgid "AI modeli o'zgartirildi: %(model)s"
+msgstr "AI model changed: %(model)s"
+
+msgid "AI o'chirildi."
+msgstr "AI disabled."
+
+msgid "AI qanday javob berishi kerak"
+msgstr "How the AI should respond"
+
+msgid "AI sozlamalari"
+msgstr "AI settings"
+
+msgid "AI sozlamalarini tahrirlash"
+msgstr "Edit AI settings"
+
+msgid "AI yoqildi."
+msgstr "AI enabled."
+
+msgid "AI yoqilgan"
+msgstr "AI enabled"
+
+msgid "AI yoqilganmi"
+msgstr "AI enabled?"
+
+msgid "Admin panel"
+msgstr "Admin panel"
+
+msgid "Admin panelga kirish"
+msgstr "Sign in to the admin panel"
+
+msgid "Akkauntni uzasizmi? AI shu raqam orqali javob berishni to'xtatadi."
+msgstr ""
+"Disconnect the account? The AI will stop replying through this number."
+
+msgid "Akkauntni uzish"
+msgstr "Disconnect account"
+
+msgid "Ariza"
+msgstr "Lead"
+
+msgid "Ariza o'chirildi."
+msgstr "Lead deleted."
+
+msgid "Arizalar"
+msgstr "Leads"
+
+msgid "Arxiv"
+msgstr "Archive"
+
+msgid "Arizalarga qaytish"
+msgstr "Back to leads"
+
+msgid "Excel yuklab olish"
+msgstr "Download Excel"
+
+msgid "Holat bo'yicha filter"
+msgstr "Filter by status"
+
+msgid "Barchasi"
+msgstr "All"
+
+msgid "Filterni tozalash"
+msgstr "Clear filter"
+
+msgid "Qaytarish"
+msgstr "Restore"
+
+msgid "Arxivlash"
+msgstr "Archive"
+
+msgid "Ariza arxivga o'tkazildi."
+msgstr "Lead moved to archive."
+
+msgid "Tanlangan arizalarni o'chirishga ishonchingiz komilmi?"
+msgstr "Are you sure you want to delete the selected leads?"
+
+msgid "Tanlanganlarni o'chirish"
+msgstr "Delete selected"
+
+msgid "%(count)s ta ariza o'chirildi."
+msgstr "Deleted %(count)s leads."
+
+msgid "Arizalar voronkasi"
+msgstr "Leads funnel"
+
+msgid "Arizalarni ko'rish"
+msgstr "View leads"
+
+msgid "Asosiy"
+msgstr "Main"
+
+msgid ""
+"Avval .env faylida TELEGRAM_API_ID va TELEGRAM_API_HASH to'ldiring "
+"(my.telegram.org)."
+msgstr ""
+"First fill in TELEGRAM_API_ID and TELEGRAM_API_HASH in the settings file "
+"(my.telegram.org)."
+
+msgid "Avval joriy akkauntni uzing, keyin yangisini ulang."
+msgstr "First disconnect the current account, then connect a new one."
+
+msgid "Avval loyihaning sozlamalar fayli to'ldirilishi kerak. Buning uchun"
+msgstr "The project settings file must be filled in first. To do this,"
+
+msgid "Avval telefon raqamni kiriting."
+msgstr "First enter the phone number."
+
+msgid "Bir vaqtning o'zida faqat bitta akkaunt ulanishi mumkin."
+msgstr "Only one account can be connected at a time."
+
+msgid ""
+"Biznes haqida ma'lumot, salomlashish uslubi, xarid/ariza so'ralganda qanday\n"
+"                javob berish kerakligi va hokazo — hammasi shu yagona matn ichida yoziladi.\n"
+"                AI faqat shu ko'rsatma va yuklangan hujjatlar asosida javob beradi."
+msgstr ""
+"Information about the business, greeting style, how to respond when a purchase/lead\n"
+"                is requested, and so on — all of this is written in this single text.\n"
+"                The AI answers only based on this instruction and the uploaded documents."
+
+msgid "Bog'lanildi"
+msgstr "Contacted"
+
+msgid "Bosh sahifa"
+msgstr "Home"
+
+msgid ""
+"Boshqa, kamdan-kam o'zgartiriladigan sozlamalar (biznes nomi va hokazo) "
+"uchun developer bilan bog'laning."
+msgstr ""
+"For other, rarely changed settings (business name, etc.), contact the "
+"developer."
+
+msgid "Boshqaruv paneli"
+msgstr "Control panel"
+
+msgid "Bot sozlamalari"
+msgstr "Bot settings"
+
+msgid "Bot sozlamasi"
+msgstr "Bot setting"
+
+msgid "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan — parolni kiriting."
+msgstr ""
+"This account has two-factor authentication (2FA) enabled — enter the "
+"password."
+
+msgid "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan. Parolni kiriting:"
+msgstr ""
+"This account has two-factor authentication (2FA) enabled. Enter the "
+"password:"
+
+msgid "Bu arizani o'chirishga ishonchingiz komilmi?"
+msgstr "Are you sure you want to delete this lead?"
+
+msgid "Bu bo'lim faqat loyiha egasi uchun"
+msgstr "This section is for the project owner only"
+
+msgid "Bu hisob super admin emas."
+msgstr "This account is not a super admin."
+
+msgid ""
+"Bu — asosiy kalit. O'chirilsa, na bot, na Telegram akkaunt (userbot) "
+"ishlaydi, biznes admin buni o'zi yoqib qo'yolmaydi."
+msgstr ""
+"This is the master switch. If turned off, neither the bot nor the Telegram "
+"account (userbot) will work — the business admin cannot turn it back on."
+
+msgid "Diqqat: loyiha obunasi faol emas yoki muddati tugagan."
+msgstr "Attention: the project subscription is inactive or has expired."
+
+msgid "Faqat guruh adminlariga"
+msgstr "Group admins only"
+
+msgid "Faqat oddiy foydalanuvchilarga (adminlarga emas)"
+msgstr "Regular users only (not admins)"
+
+msgid "Foydalanuvchi"
+msgstr "User"
+
+msgid "Foydalanuvchi nomi:"
+msgstr "Username:"
+
+msgid "Guruh"
+msgstr "Group"
+
+msgid "Guruh kalit so'zlari saqlandi."
+msgstr "Group keywords saved."
+
+msgid "Guruh uchun kalit so'zlar"
+msgstr "Keywords for the group"
+
+msgid "Guruhdagi barchaga"
+msgstr "Everyone in the group"
+
+msgid "Guruhlar"
+msgstr "Groups"
+
+msgid "Hisob ma'lumotlari"
+msgstr "Account information"
+
+msgid "Holat"
+msgstr "Status"
+
+msgid "Holati"
+msgstr "Status"
+
+msgid "Hozircha ariza yo'q"
+msgstr "No leads yet"
+
+msgid ""
+"Hozircha hech qanday Telegram akkaunt ulanmagan. AI shu raqam orqali\n"
+"       yozgan foydalanuvchilarga javob berishi uchun, akkauntni shu yerdan ulang."
+msgstr ""
+"No Telegram account is connected yet. For the AI to reply\n"
+"       to users who write to this number, connect the account here."
+
+msgid ""
+"Hozircha hech qanday Telegram akkaunt ulanmagan. Yangi akkaunt ulash\n"
+"        (telefon raqam + tasdiqlash kodi) faqat developer (super admin) tomonidan\n"
+"        amalga oshiriladi — bu sahifada faqat ulanish holatini ko'rasiz."
+msgstr ""
+"No Telegram account is connected yet. Connecting a new account\n"
+"        (phone number + confirmation code) is done only by the developer (super admin) —\n"
+"        on this page you only see the connection status."
+
+msgid ""
+"Hozircha hech qanday guruh topilmadi. Telegram akkauntingizni biror guruhga "
+"qo'shing va u yerga bitta xabar yozing — guruh avtomatik shu ro'yxatga "
+"qo'shiladi."
+msgstr ""
+"No groups found yet. Add your Telegram account to a group and send one "
+"message there — the group will be added to this list automatically."
+
+msgid "Hozircha hujjat yuklanmagan"
+msgstr "No documents uploaded yet"
+
+msgid ""
+"Hozirgi model: <strong>%(model)s</strong>. Faqat siz o'zgartira olasiz — bu "
+"narx va javob sifatiga bevosita ta'sir qiladi."
+msgstr ""
+"Current model: <strong>%(model)s</strong>. Only you can change this — it "
+"directly affects cost and answer quality."
+
+msgid "Hujjat"
+msgstr "Document"
+
+msgid "Hujjat nomi"
+msgstr "Document name"
+
+msgid "Hujjat o'chirildi."
+msgstr "Document deleted."
+
+msgid "Hujjat qismi"
+msgstr "Document chunk"
+
+msgid "Hujjat qismlari"
+msgstr "Document chunks"
+
+msgid "Hujjat yuklash"
+msgstr "Upload document"
+
+msgid "Hujjatlar"
+msgstr "Documents"
+
+msgid "Iltimos, super admin (xizmat ko'rsatuvchi) bilan bog'laning."
+msgstr "Please contact the super admin (service provider)."
+
+msgid "Ism kutilmoqda"
+msgstr "Waiting for name"
+
+msgid "Izoh"
+msgstr "Note"
+
+msgid "Izoh..."
+msgstr "Note..."
+
+msgid "Jami"
+msgstr "Total"
+
+msgid "Javob berish tartibi"
+msgstr "Reply mode"
+
+msgid "Joriy parol"
+msgstr "Current password"
+
+msgid "Kalit so'z bilan (masalan: /ai, savol)"
+msgstr "With keyword (e.g. /ai, savol)"
+
+msgid "Kalit so'zlar bo'sh bo'lishi mumkin emas."
+msgstr "Keywords cannot be empty."
+
+msgid "Kalitsiz — har bir xabarga javob"
+msgstr "Without keyword — reply to every message"
+
+msgid "Keyinroq oladi"
+msgstr "Will buy later"
+
+msgid "Kimga javob berish"
+msgstr "Who to reply to"
+
+msgid "Kirish"
+msgstr "Sign in"
+
+msgid "Kod (masalan 12345)"
+msgstr "Code (e.g. 12345)"
+
+msgid "Kod yuborish"
+msgstr "Send code"
+
+msgid "Kutilayotgan ariza"
+msgstr "Pending lead"
+
+msgid "Kutilayotgan arizalar"
+msgstr "Pending leads"
+
+msgid "Kutilmagan holat, qaytadan urinib ko'ring."
+msgstr "Unexpected state, please try again."
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Login yoki parol noto'g'ri."
+msgstr "Incorrect login or password."
+
+msgid "Login/parol noto'g'ri, yoki bu hisob super admin emas."
+msgstr "Incorrect login/password, or this account is not a super admin."
+
+msgid "Loyiha butunlay o'chirildi."
+msgstr "Project completely disabled."
+
+msgid "Loyiha yoqildi."
+msgstr "Project enabled."
+
+msgid "Loyihani butunlay o'chirish"
+msgstr "Turn off the project completely"
+
+msgid "Loyihani faollashtirish"
+msgstr "Activate the project"
+
+msgid "Manba"
+msgstr "Source"
+
+msgid "Menyuni kichraytirish"
+msgstr "Collapse menu"
+
+msgid "Mijoz bo'ldi"
+msgstr "Became a customer"
+
+msgid "Navbatda"
+msgstr "Queued"
+
+msgid "Nomi"
+msgstr "Name"
+
+msgid "Noto'g'ri model tanlandi."
+msgstr "Invalid model selected."
+
+msgid "Noto'g'ri raqam kiritdingizmi? Sahifani yangilab qaytadan boshlang."
+msgstr "Entered the wrong number? Refresh the page and start again."
+
+msgid "O'chirilgan"
+msgstr "Disabled"
+
+msgid "O'chirilsinmi?"
+msgstr "Delete?"
+
+msgid "O'chirish"
+msgstr "Delete"
+
+msgid "Obuna"
+msgstr "Subscription"
+
+msgid "Obuna %(days)s kunga uzaytirildi. Yangi muddat: %(end)s"
+msgstr "Subscription extended by %(days)s days. New end date: %(end)s"
+
+msgid "Obuna holati"
+msgstr "Subscription status"
+
+msgid "Obuna muddati %(days_left)s kundan so'ng tugaydi."
+msgstr "The subscription expires in %(days_left)s days."
+
+msgid "Obunani boshqarish"
+msgstr "Manage subscription"
+
+msgid "Olmadi"
+msgstr "Didn't buy"
+
+msgid "Oxirgi faollik"
+msgstr "Last active"
+
+msgid "Parol"
+msgstr "Password"
+
+msgid "Parol muvaffaqiyatli o'zgartirildi."
+msgstr "Password successfully changed."
+
+msgid "Parolni o'zgartirish"
+msgstr "Change password"
+
+msgid "Parolni saqlash"
+msgstr "Save password"
+
+msgid "Profil"
+msgstr "Profile"
+
+msgid "Qayta ishlandi: %(status)s"
+msgstr "Reprocessed: %(status)s"
+
+msgid "Qayta ishlanmoqda"
+msgstr "Processing"
+
+msgid "Qayta ishlash"
+msgstr "Reprocess"
+
+msgid "Qismlar"
+msgstr "Chunks"
+
+msgid "Qiziqmas"
+msgstr "Not interested"
+
+msgid "Qiziqmoqda"
+msgstr "Interested"
+
+msgid ""
+"Qo'llab-quvvatlanadi: PDF, DOCX, TXT. Yuklangach AI avtomatik o'qib, bilim "
+"bazasiga qo'shib oladi."
+msgstr ""
+"Supported: PDF, DOCX, TXT. Once uploaded, the AI automatically reads it and "
+"adds it to the knowledge base."
+
+msgid "SMS kod kutilmoqda"
+msgstr "Waiting for SMS code"
+
+msgid "SUPER ADMIN"
+msgstr "SUPER ADMIN"
+
+msgid "Sana"
+msgstr "Date"
+
+msgid "Saqlash"
+msgstr "Save"
+
+msgid "Sozlamalar saqlandi."
+msgstr "Settings saved."
+
+msgid "Suhbat yozuvi"
+msgstr "Conversation log"
+
+msgid "Suhbat yozuvlari"
+msgstr "Conversation logs"
+
+msgid "Suhbatlar (7 kun)"
+msgstr "Conversations (7 days)"
+
+msgid "Suhbatlar (7 kun): bot / akkaunt"
+msgstr "Conversations (7 days): bot / account"
+
+msgid "Muloqot qilgan odamlar"
+msgstr "People who interacted"
+
+msgid "bugun: %(today)s kishi"
+msgstr "today: %(today)s people"
+
+msgid "Javob berilgan savollar"
+msgstr "Questions answered"
+
+msgid "shundan AI: %(count)s (%(percent)s%%)"
+msgstr "of which AI: %(count)s (%(percent)s%%)"
+
+msgid "So'nggi arizalar"
+msgstr "Recent leads"
+
+msgid "Barchasini ko'rish"
+msgstr "View all"
+
+msgid "Super Admin"
+msgstr "Super Admin"
+
+msgid "Tasdiqlash"
+msgstr "Confirm"
+
+msgid "Tasdiqlash kodi %(phone)s raqamiga (Telegram orqali) yuborildi."
+msgstr "Confirmation code sent to %(phone)s (via Telegram)."
+
+msgid ""
+"Tasdiqlash kodi <strong>%(phone)s</strong> raqamiga\n"
+"       Telegram ilovasi orqali yuborildi (SMS emas, Telegram xabari sifatida keladi)."
+msgstr ""
+"The confirmation code was sent to <strong>%(phone)s</strong>\n"
+"       via the Telegram app (not SMS — it arrives as a Telegram message)."
+
+msgid "Tayyor"
+msgstr "Ready"
+
+msgid "Telefon"
+msgstr "Phone"
+
+msgid "Telefon kutilmoqda"
+msgstr "Waiting for phone"
+
+msgid "Telefon raqamini kiriting (masalan +998901234567)."
+msgstr "Enter the phone number (e.g. +998901234567)."
+
+msgid "Telegram akkaunt"
+msgstr "Telegram account"
+
+msgid "Telegram akkaunt ulanishi"
+msgstr "Telegram account connection"
+
+msgid "Telegram akkaunt ulash"
+msgstr "Connect Telegram account"
+
+msgid "Telegram akkaunt uzildi."
+msgstr "Telegram account disconnected."
+
+msgid "Telegram bot"
+msgstr "Telegram bot"
+
+msgid "Telegram guruh"
+msgstr "Telegram group"
+
+msgid "Tezkor havolalar"
+msgstr "Quick links"
+
+msgid ""
+"Tizim avtomatik ishlab turadi — qo'shimcha hech narsa ishga tushirish shart "
+"emas."
+msgstr "The system runs automatically — nothing else needs to be started."
+
+msgid "Ulandi: %(name)s"
+msgstr "Connected: %(name)s"
+
+msgid "Ulangan"
+msgstr "Connected"
+
+msgid "Ulanmagan"
+msgstr "Not connected"
+
+msgid "Uzaytirish"
+msgstr "Extend"
+
+msgid "Xabar"
+msgstr "Message"
+
+msgid "Xatolik"
+msgstr "Error"
+
+msgid "Xatolik: %(error)s"
+msgstr "Error: %(error)s"
+
+msgid "Xatolik: parol noto'g'ri bo'lishi mumkin (%(error)s)"
+msgstr "Error: the password may be incorrect (%(error)s)"
+
+msgid "Yangi"
+msgstr "New"
+
+msgid "Yangi arizalar"
+msgstr "New leads"
+
+msgid "Yangi hujjat yuklash"
+msgstr "Upload new document"
+
+msgid "Yangi parol"
+msgstr "New password"
+
+msgid "Yangi parol (tasdiqlash)"
+msgstr "New password (confirm)"
+
+msgid "Yoqilgan"
+msgstr "Enabled"
+
+msgid "Yuklash"
+msgstr "Upload"
+
+msgid "jami: %(total)s"
+msgstr "total: %(total)s"
+
+msgid "kun"
+msgstr "days"
+
+msgid ""
+"prefikslar avtomatik tanib olinadi, faqat asosiy so'zni pastda vergul bilan "
+"yozing)."
+msgstr ""
+"prefixes are recognized automatically — just enter the root word below, "
+"separated by commas)."
+
+msgid "savoldan"
+msgstr "of questions"
+
+msgid "saytidan kerakli ma'lumotlarni oling va developerga bering."
+msgstr "get the required details and give them to the developer."
+
+msgid "tayyor / jami"
+msgstr "ready / total"
+
+msgid "tugash sanasi: %(end_date)s (%(days)s kun)"
+msgstr "end date: %(end_date)s (%(days)s days)"

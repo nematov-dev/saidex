@@ -1,0 +1,51 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Hujjatlar" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <h6>{% trans "Yangi hujjat yuklash" %}</h6>
+    <form method="post" enctype="multipart/form-data" class="row g-2">
+        {% csrf_token %}
+        <div class="col-md-5">{{ form.title }}</div>
+        <div class="col-md-5">{{ form.file }}</div>
+        <div class="col-md-2"><button class="btn btn-dark w-100" type="submit">{% trans "Yuklash" %}</button></div>
+    </form>
+    <div class="form-text">{% trans "Qo'llab-quvvatlanadi: PDF, DOCX, TXT. Yuklangach AI avtomatik o'qib, bilim bazasiga qo'shib oladi." %}</div>
+</div>
+
+<div class="card stat-card p-3">
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr><th>{% trans "Nomi" %}</th><th>{% trans "Holati" %}</th><th>{% trans "Qismlar" %}</th><th>{% trans "Sana" %}</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for doc in documents %}
+            <tr>
+                <td>{{ doc.title }}</td>
+                <td>
+                    {% if doc.status == "ready" %}<span class="badge bg-success">{% trans "Tayyor" %}</span>
+                    {% elif doc.status == "error" %}<span class="badge bg-danger" title="{{ doc.error_message }}">{% trans "Xatolik" %}</span>
+                    {% else %}<span class="badge bg-secondary">{{ doc.get_status_display }}</span>{% endif %}
+                </td>
+                <td>{{ doc.chunk_count }}</td>
+                <td>{{ doc.created_at|date:"d.m.Y H:i" }}</td>
+                <td class="text-end">
+                    <form method="post" action="{% url 'assistant:document_reprocess' doc.pk %}" class="d-inline">
+                        {% csrf_token %}<button class="btn btn-sm btn-outline-secondary" title="{% trans 'Qayta ishlash' %}">↻</button>
+                    </form>
+                    {% trans "O'chirilsinmi?" as confirm_delete %}
+                    <form method="post" action="{% url 'assistant:document_delete' doc.pk %}" class="d-inline" data-confirm="{{ confirm_delete }}">
+                        {% csrf_token %}<button class="btn btn-sm btn-outline-danger">{% trans "O'chirish" %}</button>
+                    </form>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">{% trans "Hozircha hujjat yuklanmagan" %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

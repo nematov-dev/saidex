@@ -1,0 +1,61 @@
+{% extends "assistant/superadmin_base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Telegram akkaunt ulash" %}</h3>
+
+<div class="card stat-card p-4" style="max-width: 520px;">
+
+{% if not api_configured %}
+    <div class="alert alert-warning">
+        {% trans "Avval loyihaning sozlamalar fayli to'ldirilishi kerak. Buning uchun" %}
+        <a href="https://my.telegram.org/apps" target="_blank">my.telegram.org/apps</a>
+        {% trans "saytidan kerakli ma'lumotlarni oling va developerga bering." %}
+    </div>
+
+{% elif connection.status == "connected" %}
+    <div class="text-center mb-3">
+        <div class="fs-1 text-success"><i class="bi bi-check-circle"></i></div>
+        <h5>{% trans "Ulangan" %}</h5>
+        <p class="text-muted mb-1">{{ connection.connected_first_name }} (@{{ connection.connected_username|default:"—" }})</p>
+        <p class="text-muted small">{{ connection.phone_number }} — {{ connection.connected_at|date:"d.m.Y H:i" }}</p>
+    </div>
+    {% trans "Akkauntni uzasizmi? AI shu raqam orqali javob berishni to'xtatadi." as confirm_disconnect %}
+    <form method="post" action="{% url 'assistant:telegram_disconnect' %}" data-confirm="{{ confirm_disconnect }}">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger w-100">{% trans "Akkauntni uzish" %}</button>
+    </form>
+    <div class="form-text mt-2">
+        {% trans "Tizim avtomatik ishlab turadi — qo'shimcha hech narsa ishga tushirish shart emas." %}
+    </div>
+
+{% elif connection.status == "pending_code" %}
+    <p class="text-muted">{% blocktrans with phone=connection.phone_number %}Tasdiqlash kodi <strong>{{ phone }}</strong> raqamiga
+       Telegram ilovasi orqali yuborildi (SMS emas, Telegram xabari sifatida keladi).{% endblocktrans %}</p>
+    <form method="post" action="{% url 'assistant:telegram_verify_code' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" required autofocus>
+        <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
+    </form>
+    <div class="form-text mt-2">{% trans "Noto'g'ri raqam kiritdingizmi? Sahifani yangilab qaytadan boshlang." %}</div>
+
+{% elif connection.status == "pending_password" %}
+    <p class="text-muted">{% trans "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan. Parolni kiriting:" %}</p>
+    <form method="post" action="{% url 'assistant:telegram_verify_password' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="password" name="password" class="form-control" placeholder="{% trans '2FA parol' %}" required autofocus>
+        <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
+    </form>
+
+{% else %}
+    <p class="text-muted">{% blocktrans %}Hozircha hech qanday Telegram akkaunt ulanmagan. AI shu raqam orqali
+       yozgan foydalanuvchilarga javob berishi uchun, akkauntni shu yerdan ulang.{% endblocktrans %}</p>
+    <form method="post" action="{% url 'assistant:telegram_send_code' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="text" name="phone_number" class="form-control" placeholder="+998901234567" required autofocus>
+        <button class="btn btn-dark">{% trans "Kod yuborish" %}</button>
+    </form>
+    <div class="form-text mt-2">{% trans "Bir vaqtning o'zida faqat bitta akkaunt ulanishi mumkin." %}</div>
+{% endif %}
+
+</div>
+{% endblock %}

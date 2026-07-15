@@ -1,0 +1,136 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="m-0">{% trans "Bosh sahifa" %}</h3>
+    <div class="d-flex gap-2">
+        <form method="post" action="{% url 'assistant:toggle_ai' %}">
+            {% csrf_token %}
+            {% if not config.ai_enabled and not subscription.is_service_active %}
+                <button class="btn btn-sm btn-danger" type="submit" disabled
+                        title="{% trans "AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning." %}">
+                    <i class="bi bi-robot"></i> AI: {% trans "O'chirilgan" %}
+                </button>
+            {% else %}
+                <button class="btn btn-sm {% if config.ai_enabled %}btn-success{% else %}btn-danger{% endif %}" type="submit">
+                    <i class="bi bi-robot"></i> AI: {% if config.ai_enabled %}{% trans "Yoqilgan" %}{% else %}{% trans "O'chirilgan" %}{% endif %}
+                </button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-v2 p-3">
+            <span class="stat-icon stat-icon-purple"><i class="bi bi-file-earmark-text"></i></span>
+            <div>
+                <div class="text-muted small">{% trans "Hujjatlar" %}</div>
+                <div class="fs-3 fw-bold">{{ documents_ready }}/{{ documents_count }}</div>
+                <div class="text-muted small">{% trans "tayyor / jami" %}</div>
+            </div>
+            <svg class="stat-sparkline" width="64" height="28" viewBox="0 0 64 28" fill="none" style="color:#6366f1;">
+                <polyline points="0,22 10,18 20,20 30,12 40,14 50,6 64,4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-v2 p-3">
+            <span class="stat-icon stat-icon-blue"><i class="bi bi-stars"></i></span>
+            <div>
+                <div class="text-muted small">{% trans "Yangi arizalar" %}</div>
+                <div class="fs-3 fw-bold">{{ leads_new }}</div>
+                <div class="text-muted small">{% blocktrans with total=leads_total %}jami: {{ total }}{% endblocktrans %}</div>
+            </div>
+            <svg class="stat-sparkline" width="64" height="28" viewBox="0 0 64 28" fill="none" style="color:#3b82f6;">
+                <polyline points="0,10 10,16 20,8 30,18 40,10 50,20 64,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-v2 p-3">
+            <span class="stat-icon stat-icon-green"><i class="bi bi-people"></i></span>
+            <div>
+                <div class="text-muted small">{% trans "Muloqot qilgan odamlar" %}</div>
+                <div class="fs-3 fw-bold">{{ unique_users_total }}</div>
+                <div class="text-muted small">{% blocktrans with today=unique_users_today %}bugun: {{ today }} kishi{% endblocktrans %}</div>
+            </div>
+            <svg class="stat-sparkline" width="64" height="28" viewBox="0 0 64 28" fill="none" style="color:#10b981;">
+                <polyline points="0,20 10,14 20,16 30,8 40,12 50,4 64,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card stat-card-v2 p-3">
+            <span class="stat-icon stat-icon-orange"><i class="bi bi-robot"></i></span>
+            <div>
+                <div class="text-muted small">{% trans "Javob berilgan savollar" %}</div>
+                <div class="fs-3 fw-bold">{{ conversations_total }}</div>
+                <div class="text-muted small">{% blocktrans with count=ai_answered_total percent=ai_answered_percent %}shundan AI: {{ count }} ({{ percent }}%){% endblocktrans %}</div>
+            </div>
+            <svg class="stat-sparkline" width="64" height="28" viewBox="0 0 64 28" fill="none" style="color:#f97316;">
+                <polyline points="0,16 10,20 20,10 30,14 40,6 50,12 64,4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="card stat-card p-4">
+    <h5 class="mb-3">{% trans "Tezkor havolalar" %}</h5>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'assistant:documents' %}" class="quick-link-pill">
+            <span class="stat-icon stat-icon-purple"><i class="bi bi-upload"></i></span>
+            {% trans "Hujjat yuklash" %}
+        </a>
+        <a href="{% url 'assistant:prompt_settings' %}" class="quick-link-pill">
+            <span class="stat-icon stat-icon-blue"><i class="bi bi-sliders"></i></span>
+            {% trans "AI sozlamalarini tahrirlash" %}
+        </a>
+        <a href="{% url 'assistant:leads' %}" class="quick-link-pill">
+            <span class="stat-icon stat-icon-green"><i class="bi bi-inbox"></i></span>
+            {% trans "Arizalarni ko'rish" %}
+        </a>
+    </div>
+</div>
+
+<div class="card stat-card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="m-0">{% trans "So'nggi arizalar" %}</h5>
+        <a href="{% url 'assistant:leads' %}" class="small">{% trans "Barchasini ko'rish" %} &rarr;</a>
+    </div>
+    <div class="table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr>
+                <th>{% trans "Foydalanuvchi" %}</th><th>{% trans "Manba" %}</th><th>{% trans "Telefon" %}</th>
+                <th>{% trans "Xabar" %}</th><th>{% trans "Holat" %}</th><th>{% trans "Sana" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for lead in recent_leads %}
+            <tr>
+                <td>{{ lead.full_name|default:lead.telegram_username|default:lead.telegram_user_id }}</td>
+                <td><span class="badge bg-light text-dark">{{ lead.get_channel_display }}</span></td>
+                <td>{{ lead.phone|default:"-" }}</td>
+                <td style="max-width: 260px;">{{ lead.message|truncatechars:60 }}</td>
+                <td>
+                    <span class="badge
+                        {% if lead.status == 'new' %}bg-primary
+                        {% elif lead.status == 'contacted' %}bg-info text-dark
+                        {% elif lead.status == 'interested' %}bg-warning text-dark
+                        {% elif lead.status == 'customer' %}bg-success
+                        {% elif lead.status == 'will_buy_later' %}bg-secondary
+                        {% else %}bg-light text-dark{% endif %}">
+                        {{ lead.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ lead.created_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">{% trans "Hozircha ariza yo'q" %}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

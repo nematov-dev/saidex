@@ -1,0 +1,16 @@
+[Unit]
+Description=Saidex AI Agent — admin panel
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/saidex_ai_agent
+EnvironmentFile=/opt/saidex_ai_agent/.env
+RuntimeDirectory=gunicorn
+ExecStart=/opt/saidex_ai_agent/venv/bin/gunicorn config.wsgi:application --workers 2 --bind unix:/run/gunicorn/saidex.sock
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

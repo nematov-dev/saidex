@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: saidex_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-saidex_ai_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-saidex_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/init_postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saidex_admin} -d ${POSTGRES_DB:-saidex_ai_agent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: saidex_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  # ------------------------------------------------------------------
+  # Django admin panel (web) — bitta buyruq bilan ("docker compose up
+  # --build") postgres tayyor bo'lishini kutib, migratsiyalarni o'zi
+  # bajaradi va serverni ishga tushiradi.
+  # ------------------------------------------------------------------
+  web:
+    build: .
+    container_name: saidex_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/service-account.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # ------------------------------------------------------------------
+  # Telegram AKKAUNT (Telethon userbot) — web bilan bir vaqtda ishga
+  # tushadi. Agar hali hech qanday akkaunt ulanmagan bo'lsa (admin panel >
+  # Super Admin > Telegram akkaunt orqali ulanmagan), xatolik berib
+  # to'xtaydi — "restart: on-failure" tufayli akkaunt ulangach avtomatik
+  # qayta urinib, ishga tushib ketadi (konteynerni qayta yaratish shart emas).
+  # ------------------------------------------------------------------
+  userbot:
+    build: .
+    container_name: saidex_userbot
+    restart: on-failure
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python userbot/run.py"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/service-account.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      web:
+        condition: service_started
+
+volumes:
+  pg_data:

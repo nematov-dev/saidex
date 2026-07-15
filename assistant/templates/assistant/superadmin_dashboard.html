@@ -1,0 +1,89 @@
+{% extends "assistant/superadmin_base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Boshqaruv paneli" %}</h3>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Obuna holati" %}</div>
+            <div class="fs-4 fw-bold">{{ subscription.status|title }}</div>
+            <div class="text-muted small">{% blocktrans with end_date=subscription.subscription_end|date:"d.m.Y" days=subscription.days_left %}tugash sanasi: {{ end_date }} ({{ days }} kun){% endblocktrans %}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Hujjatlar" %}</div>
+            <div class="fs-4 fw-bold">{{ documents_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Suhbatlar (7 kun): bot / akkaunt" %}</div>
+            <div class="fs-4 fw-bold">{{ conversations_by_channel.bot }} / {{ conversations_by_channel.userbot }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card stat-card p-4">
+            <h6>{% trans "Obunani boshqarish" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_extend' %}" class="d-flex gap-2 mb-2">
+                {% csrf_token %}
+                <select name="days" class="form-select">
+                    <option value="30">30 {% trans "kun" %}</option>
+                    <option value="90">90 {% trans "kun" %}</option>
+                    <option value="180">180 {% trans "kun" %}</option>
+                    <option value="365">365 {% trans "kun" %}</option>
+                </select>
+                <button class="btn btn-dark">{% trans "Uzaytirish" %}</button>
+            </form>
+            <form method="post" action="{% url 'assistant:superadmin_extend' %}" class="d-flex gap-2 mb-3">
+                {% csrf_token %}
+                <input type="number" name="custom_amount" min="1" class="form-control" placeholder="{% trans 'Boshqa miqdor' %}">
+                <select name="custom_unit" class="form-select" style="max-width: 110px;">
+                    <option value="days">{% trans "kun" %}</option>
+                    <option value="months">{% trans "oy" %}</option>
+                </select>
+                <button class="btn btn-outline-dark">{% trans "Qo'shish" %}</button>
+            </form>
+            <form method="post" action="{% url 'assistant:superadmin_toggle' %}">
+                {% csrf_token %}
+                <button class="btn {% if subscription.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
+                    {% if subscription.is_active %}{% trans "Loyihani butunlay o'chirish" %}{% else %}{% trans "Loyihani faollashtirish" %}{% endif %}
+                </button>
+            </form>
+            <div class="form-text mt-2">
+                {% trans "Bu — asosiy kalit. O'chirilsa, na bot, na Telegram akkaunt (userbot) ishlaydi, biznes admin buni o'zi yoqib qo'yolmaydi." %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-4 mb-3">
+            <h6>{% trans "AI modeli" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_set_model' %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <select name="llm_model" class="form-select">
+                    {% for value, label in available_models %}
+                        <option value="{{ value }}" {% if subscription.llm_model == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-dark">{% trans "Saqlash" %}</button>
+            </form>
+            <div class="form-text mt-2">
+                {% blocktrans with model=subscription.llm_model %}Hozirgi model: <strong>{{ model }}</strong>. Faqat siz o'zgartira olasiz — bu narx va javob sifatiga bevosita ta'sir qiladi.{% endblocktrans %}
+            </div>
+        </div>
+        <div class="card stat-card p-4">
+            <h6>{% trans "Arizalar voronkasi" %}</h6>
+            <table class="table table-sm mb-0">
+                {% for code, count in leads_by_status.items %}
+                <tr><td>{{ code }}</td><td class="text-end fw-bold">{{ count }}</td></tr>
+                {% endfor %}
+                <tr class="border-top"><td class="fw-bold">{% trans "Jami" %}</td><td class="text-end fw-bold">{{ leads_total }}</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
