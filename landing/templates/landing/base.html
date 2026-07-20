@@ -17,7 +17,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="{% static 'landing/style.css' %}?v=3" rel="stylesheet">
+    <link href="{% static 'landing/style.css' %}?v=6" rel="stylesheet">
 </head>
 <body class="landing">
 <header class="landing-header">
@@ -32,6 +32,7 @@
         </a>
         <nav class="landing-nav">
             <a href="#services">{% trans "Xizmatlar" %}</a>
+            <a href="#demo">{% trans "Sinab ko'ring" %}</a>
             <a href="#tariffs">{% trans "Tariflar" %}</a>
             <a href="#portfolio">{% trans "Ishlarimiz" %}</a>
             <a href="#testimonials">{% trans "Mijozlar fikri" %}</a>
@@ -130,6 +131,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 </script>
-<script src="{% static 'landing/demo.js' %}?v=2"></script>
+<script src="{% static 'landing/demo.js' %}?v=3"></script>
 </body>
 </html>

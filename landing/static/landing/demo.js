@@ -34,6 +34,21 @@
             bubble.textContent = text;
             chatMessages.appendChild(bubble);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            return bubble;
+        }
+
+        function showTyping() {
+            var bubble = document.createElement("div");
+            bubble.className = "demo-msg demo-msg-assistant demo-typing";
+            bubble.setAttribute("data-demo-typing", "");
+            bubble.innerHTML = "<span></span><span></span><span></span>";
+            chatMessages.appendChild(bubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            var bubble = chatMessages.querySelector("[data-demo-typing]");
+            if (bubble) bubble.remove();
         }
 
         function openChat() {
@@ -41,7 +56,9 @@
         }
 
         async function sendAudio(blob) {
-            setStatus("AI javob tayyorlamoqda...");
+            setStatus("AI yozmoqda...");
+            openChat();
+            showTyping();
             var formData = new FormData();
             formData.append("audio", blob, "demo.webm");
             try {
@@ -51,17 +68,18 @@
                     body: formData,
                 });
                 var data = await resp.json();
+                hideTyping();
                 if (!resp.ok) {
                     setStatus(data.error || "Xatolik yuz berdi.");
                     return;
                 }
-                openChat();
                 addMessage("user", data.question);
                 addMessage("assistant", data.answer);
                 history.push({ role: "user", content: data.question });
                 history.push({ role: "assistant", content: data.answer });
                 setStatus("Yozib gapiring yoki pastda yozing.");
             } catch (e) {
+                hideTyping();
                 setStatus("Tarmoq xatoligi. Qaytadan urinib ko'ring.");
             }
         }
@@ -72,6 +90,7 @@
             history.push({ role: "user", content: text });
             if (sendBtn) sendBtn.disabled = true;
             if (chatInput) chatInput.disabled = true;
+            showTyping();
             try {
                 var resp = await fetch("/demo/chat/", {
                     method: "POST",
@@ -79,6 +98,7 @@
                     body: JSON.stringify({ message: text, history: history }),
                 });
                 var data = await resp.json();
+                hideTyping();
                 if (!resp.ok) {
                     addMessage("assistant", data.error || "Xatolik yuz berdi.");
                     return;
@@ -86,6 +106,7 @@
                 addMessage("assistant", data.answer);
                 history.push({ role: "assistant", content: data.answer });
             } catch (e) {
+                hideTyping();
                 addMessage("assistant", "Tarmoq xatoligi. Qaytadan urinib ko'ring.");
             } finally {
                 if (sendBtn) sendBtn.disabled = false;

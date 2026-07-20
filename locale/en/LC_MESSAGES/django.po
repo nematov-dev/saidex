@@ -15,6 +15,12 @@ msgstr ""
 msgid "AI qanday ishlashini o'zingiz sinab ko'ring"
 msgstr "See for yourself how the AI works"
 
+msgid "Operator"
+msgstr "Operator"
+
+msgid "onlayn"
+msgstr "online"
+
 msgid "Biznesingiz uchun sun'iy intellekt yechimlari"
 msgstr "Artificial intelligence solutions for your business"
 

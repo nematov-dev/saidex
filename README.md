@@ -182,21 +182,58 @@ crontab -e
 0 9 * * * cd /opt/saidex_ai_agent && venv/bin/python manage.py check_subscription_alert
 ```
 
-## Domen va production joylashtirish
+## Domen va production joylashtirish (Docker bilan)
+
+1. Serverga kodni olib boring (`git clone` yoki `scp`), `.env` faylini
+   serverda alohida yarating (bu fayl gitga tushmaydi) — **albatta**
+   `DJANGO_DEBUG=False` va `DJANGO_ALLOWED_HOSTS=<domen.uz>` qiling.
+
+2. Production compose fayli bilan ishga tushiring (bu `docker-compose.yml`
+   (dev)dan farqli — `gunicorn` ishlatadi, statik fayllarni yig'adi,
+   Postgres/Redis portlarini tashqariga ochmaydi):
 
 ```bash
-# Nginx config
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec web python manage.py createsuperuser
+```
+
+3. Domen va SSL uchun Nginx (hostda, konteynerdan tashqarida ishlaydi):
+
+```bash
 ./scripts/generate_nginx.sh <domen.uz> /opt/saidex_ai_agent
 sudo cp deploy/nginx/saidex.conf /etc/nginx/sites-available/saidex.conf
 sudo ln -s /etc/nginx/sites-available/saidex.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d <domen.uz>        # bepul SSL, avtomatik yangilanadi
+```
 
-# systemd xizmatlari
+**Kodni yangilash** (keyingi safar o'zgarish kiritilganda):
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+**Loglarni ko'rish:**
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f web
+docker compose -f docker-compose.prod.yml logs -f userbot
+```
+
+### Muqobil: Docker'siz (systemd + venv)
+
+Agar Docker ishlatmoqchi bo'lmasangiz, `deploy/systemd/*.service` va
+venv-asoslangan o'rnatish ham mumkin (yuqoridagi "Docker'siz, qo'lda ishga
+tushirish" bo'limiga qarang), lekin bu holda Nginx konfiguratsiyasini
+`unix:/run/gunicorn/saidex.sock`ga qaytarib sozlash kerak bo'ladi (hozirgi
+`generate_nginx.sh` Docker'ga mos — `127.0.0.1:8000`ga proxy qiladi):
+
+```bash
 sudo cp deploy/systemd/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now saidex-web
-sudo systemctl enable --now saidex-userbot   # Telegram akkaunt uchun
+sudo systemctl enable --now saidex-userbot
 ```
 
 ## Postgres — alohida foydalanuvchi (xavfsizlik uchun tavsiya)

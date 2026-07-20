@@ -1,0 +1,108 @@
+# Production uchun compose fayli — docker-compose.yml (dev, runserver,
+# ochiq DB porti) o'rniga serverda shu ishlatiladi:
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Farqlari (dev'dan):
+#   - web: Django dev server ("runserver") o'rniga gunicorn ishlatiladi,
+#     ishga tushishdan oldin statik fayllar yig'iladi (collectstatic).
+#   - postgres/redis portlari HOSTGA (tashqariga) OCHILMAYDI — faqat
+#     konteynerlar ichki tarmog'ida (postgres/redis nomlari orqali)
+#     kirish mumkin, bu serverni tashqi hujumdan himoya qiladi.
+#   - web porti faqat 127.0.0.1 (localhost)ga bog'lanadi — internetdan
+#     to'g'ridan-to'g'ri emas, faqat Nginx orqali (reverse-proxy) kirish
+#     mumkin bo'ladi.
+#   - userbot "restart: unless-stopped" — server qayta yuklansa ham
+#     (xatolik bo'lmasa ham) avtomatik ishga tushib turadi.
+#
+# MUHIM: serverga joylashtirishdan oldin .env faylida DJANGO_DEBUG=False
+# va DJANGO_ALLOWED_HOSTS=domeningiz.uz qilib sozlang.
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: saidex_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-saidex_ai_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-saidex_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/init_postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saidex_admin} -d ${POSTGRES_DB:-saidex_ai_agent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: saidex_redis
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # Django admin panel (web) — gunicorn orqali production rejimida.
+  # ------------------------------------------------------------------
+  web:
+    build: .
+    container_name: saidex_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"
+    volumes:
+      - .:/app
+    ports:
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/service-account.json
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # ------------------------------------------------------------------
+  # Telegram AKKAUNT (Telethon userbot).
+  # ------------------------------------------------------------------
+  userbot:
+    build: .
+    container_name: saidex_userbot
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python userbot/run.py"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/service-account.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      web:
+        condition: service_started
+
+volumes:
+  pg_data:

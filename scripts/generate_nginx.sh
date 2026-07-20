@@ -31,7 +31,11 @@ server {
     }
 
     location / {
-        proxy_pass http://unix:/run/gunicorn/saidex.sock;
+        # Docker (docker-compose.prod.yml) web konteyneri "127.0.0.1:8000"ga
+        # bog'langan — shu yerga proxy qilinadi (unix socket emas, chunki
+        # gunicorn konteyner ICHIDA ishlaydi, hostdagi socket fayliga
+        # yozolmaydi).
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -42,6 +46,10 @@ EOF
 
 echo "Tayyor: deploy/nginx/saidex.conf"
 cat <<MSG
+
+MUHIM: bu skript Docker orqali joylashtirishni ("docker compose -f
+docker-compose.prod.yml up -d --build") nazarda tutadi — web konteyneri
+127.0.0.1:8000ga bog'langan bo'lishi kerak (prod compose faylida shunday).
 
 Serverga joylashtirish:
   sudo cp deploy/nginx/saidex.conf /etc/nginx/sites-available/saidex.conf

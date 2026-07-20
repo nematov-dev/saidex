@@ -64,6 +64,20 @@ def _log_demo_conversation(request, question, answer, answered_by_ai, in_tok, ou
     )
 
 
+def _create_demo_lead(request, message):
+    """
+    Landing page demo-chatida xarid niyati aniqlansa, guruhdagi kabi
+    (userbot/handlers.py'dagi create_group_lead) — bosqichma-bosqich ism/
+    telefon so'ralmaydi (anonim veb tashrif buyuruvchi, sessiya yo'q), ariza
+    to'g'ridan-to'g'ri channel="website" bilan yaratiladi, keyinroq admin
+    o'zi bog'lanishi uchun.
+    """
+    Lead.objects.create(
+        telegram_user_id=get_pseudo_user_id(get_client_ip(request)),
+        full_name="", phone="", message=message, channel="website",
+    )
+
+
 @require_POST
 def demo_voice(request):
     """
@@ -85,10 +99,12 @@ def demo_voice(request):
     if not question:
         return JsonResponse({"error": _("Ovozli xabarni tushuna olmadim. Yana urinib ko'ring.")}, status=422)
 
-    answer, in_tok, out_tok, answered_by_ai, _wants_lead = answer_question(
+    answer, in_tok, out_tok, answered_by_ai, wants_lead = answer_question(
         question, channel="website", history=None,
     )
     _log_demo_conversation(request, question, answer, answered_by_ai, in_tok, out_tok)
+    if wants_lead:
+        _create_demo_lead(request, question)
     return JsonResponse({"question": question, "answer": answer or str(_("Kechirasiz, hozircha javob bera olmadim."))})
 
 
@@ -115,8 +131,10 @@ def demo_chat(request):
         if isinstance(item, dict) and item.get("content")
     ]
 
-    answer, in_tok, out_tok, answered_by_ai, _wants_lead = answer_question(
+    answer, in_tok, out_tok, answered_by_ai, wants_lead = answer_question(
         message, channel="website", history=history,
     )
     _log_demo_conversation(request, message, answer, answered_by_ai, in_tok, out_tok)
+    if wants_lead:
+        _create_demo_lead(request, message)
     return JsonResponse({"answer": answer or str(_("Kechirasiz, hozircha javob bera olmadim."))})

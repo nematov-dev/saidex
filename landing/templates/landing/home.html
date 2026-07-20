@@ -9,6 +9,7 @@
         <p>{% trans "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati. Mijozlaringiz bilan 24/7 muloqot qiluvchi AI yarating." %}</p>
         <div class="cta-row">
             <a href="#contact" class="btn btn-primary">{% trans "Bepul konsultatsiya olish" %}</a>
+            <a href="#demo" class="btn btn-success">🎙️ {% trans "Sinab ko'ring" %}</a>
             <a href="#services" class="btn btn-outline">{% trans "Xizmatlarni ko'rish" %}</a>
         </div>
     </div>
@@ -65,21 +66,26 @@
                 {% trans "Xuddi Telegram'dagi kabi — ovozli xabar yozing, AI matn ko'rinishida javob beradi." %}
             </p>
         </div>
-        <div class="card demo-card" style="max-width:460px; margin:0 auto;">
-            <button type="button" class="demo-mic-btn" data-demo-mic title="{% trans "Bosib gapiring" %}">
-                <span class="demo-mic-ring"></span>
-                <span class="demo-mic-ring"></span>
-                <svg class="demo-mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" fill="currentColor"/>
-                    <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </button>
-            <div>
-                <strong data-demo-status>{% trans "Bosib, savolingizni ayting yoki pastda yozing" %}</strong>
+        <div class="card demo-card" style="max-width:680px; margin:0 auto;">
+            <div class="demo-chat-header">
+                <div class="demo-avatar">U</div>
+                <div>
+                    <div class="demo-operator-name">Umarbek <span class="demo-operator-role">— {% trans "Operator" %}</span></div>
+                    <div class="demo-online"><span class="demo-online-dot"></span>{% trans "onlayn" %}</div>
+                </div>
             </div>
             <div class="demo-chat" data-demo-chat>
                 <div class="demo-messages" data-demo-messages></div>
+                <div class="demo-status-line" data-demo-status></div>
                 <form class="demo-input-row" data-demo-form>
+                    <button type="button" class="demo-mic-btn-sm" data-demo-mic title="{% trans "Bosib gapiring" %}">
+                        <span class="demo-mic-ring-sm"></span>
+                        <span class="demo-mic-ring-sm"></span>
+                        <svg class="demo-mic-icon-sm" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" fill="currentColor"/>
+                            <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                     <input type="text" class="form-control" data-demo-input placeholder="{% trans "Xabar yozing..." %}" autocomplete="off">
                     <button type="submit" class="btn btn-primary btn-sm" data-demo-send>{% trans "Yuborish" %}</button>
                 </form>
