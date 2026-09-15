@@ -22,6 +22,23 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-CHANGE-ME")
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+# MUHIM: sayt Nginx (va undan oldin Cloudflare) orqali reverse-proxy qilib
+# ishlaydi — Django'ning o'zi to'g'ridan-to'g'ri HTTPS qabul qilmaydi, faqat
+# Nginx'dan HTTP orqali so'rov oladi. Shu sabab ikkita narsa kerak:
+# 1) SECURE_PROXY_SSL_HEADER — Nginx yuborgan "X-Forwarded-Proto: https"
+#    headerini ko'rib, Django so'rovni HTTPS deb to'g'ri aniqlashi uchun
+#    (aks holda CSRF cookie va boshqa "secure" tekshiruvlar chalkashadi).
+# 2) CSRF_TRUSTED_ORIGINS — Django 4+ da POST so'rovlar (masalan login
+#    formasi) uchun brauzer yuborgan "Origin: https://domen.uz" headeri
+#    ALLOWED_HOSTS'da emas, aynan shu ro'yxatda bo'lishi shart, aks holda
+#    "CSRF tekshiruvi amalga oshmadi" (403) xatosi chiqadi.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host.strip()}"
+    for host in ALLOWED_HOSTS
+    if host.strip() and host.strip() not in ("localhost", "127.0.0.1")
+]
+
 BUSINESS_NAME = os.getenv("BUSINESS_NAME", "AI Assistant")
 BUSINESS_SLUG = os.getenv("BUSINESS_SLUG", "business")
 

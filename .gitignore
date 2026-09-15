@@ -8,3 +8,4 @@ media/
 *.session
 .DS_Store
 .claude/
+secrets/

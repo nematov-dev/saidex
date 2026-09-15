@@ -502,9 +502,10 @@ def telegram_account(request):
     })
 
 
-@superadmin_required
-@require_POST
-def telegram_send_code(request):
+def _send_code_logic(request):
+    """Telefon raqamiga tasdiqlash kodi yuborish — super admin va biznes admin
+    ikkalasi ham ishlatadigan umumiy mantiq (faqat keyingi redirect manzili
+    chaqiruvchi view'da farqlanadi)."""
     phone = request.POST.get("phone_number", "").strip()
     connection = TelegramAccountConnection.get_solo()
 
@@ -513,15 +514,15 @@ def telegram_send_code(request):
             request,
             _("Avval .env faylida TELEGRAM_API_ID va TELEGRAM_API_HASH to'ldiring (my.telegram.org)."),
         )
-        return redirect("assistant:telegram_account")
+        return
 
     if connection.is_connected:
         messages.error(request, _("Avval joriy akkauntni uzing, keyin yangisini ulang."))
-        return redirect("assistant:telegram_account")
+        return
 
     if not phone:
         messages.error(request, _("Telefon raqamini kiriting (masalan +998901234567)."))
-        return redirect("assistant:telegram_account")
+        return
 
     client = _telethon_client()
     try:
@@ -540,18 +541,18 @@ def telegram_send_code(request):
         messages.error(request, _("Xatolik: %(error)s") % {"error": exc})
     finally:
         client.disconnect()
-    return redirect("assistant:telegram_account")
 
 
-@superadmin_required
-@require_POST
-def telegram_verify_code(request):
+def _verify_code_logic(request):
+    """Yuborilgan kodni tasdiqlash — ikkala panel uchun umumiy mantiq.
+    Agar 2FA kerak bo'lsa, ("pending_password", None) qaytaradi, aks holda
+    (holat, xabar) emas — chaqiruvchi view natijani status orqali biladi."""
     code = request.POST.get("code", "").strip()
     connection = TelegramAccountConnection.get_solo()
 
     if connection.status != "pending_code":
         messages.error(request, _("Avval telefon raqamni kiriting."))
-        return redirect("assistant:telegram_account")
+        return
 
     client = _telethon_client(connection.session_string)
     try:
@@ -563,7 +564,7 @@ def telegram_verify_code(request):
             connection.status = "pending_password"
             connection.save()
             messages.info(request, _("Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan — parolni kiriting."))
-            return redirect("assistant:telegram_account")
+            return
 
         me = client.get_me()
         connection.session_string = client.session.save()
@@ -581,18 +582,16 @@ def telegram_verify_code(request):
         messages.error(request, _("Xatolik: %(error)s") % {"error": exc})
     finally:
         client.disconnect()
-    return redirect("assistant:telegram_account")
 
 
-@superadmin_required
-@require_POST
-def telegram_verify_password(request):
+def _verify_password_logic(request):
+    """2FA parolini tasdiqlash — ikkala panel uchun umumiy mantiq."""
     password = request.POST.get("password", "")
     connection = TelegramAccountConnection.get_solo()
 
     if connection.status != "pending_password":
         messages.error(request, _("Kutilmagan holat, qaytadan urinib ko'ring."))
-        return redirect("assistant:telegram_account")
+        return
 
     client = _telethon_client(connection.session_string)
     try:
@@ -617,6 +616,26 @@ def telegram_verify_password(request):
         )
     finally:
         client.disconnect()
+
+
+@superadmin_required
+@require_POST
+def telegram_send_code(request):
+    _send_code_logic(request)
+    return redirect("assistant:telegram_account")
+
+
+@superadmin_required
+@require_POST
+def telegram_verify_code(request):
+    _verify_code_logic(request)
+    return redirect("assistant:telegram_account")
+
+
+@superadmin_required
+@require_POST
+def telegram_verify_password(request):
+    _verify_password_logic(request)
     return redirect("assistant:telegram_account")
 
 
@@ -653,16 +672,42 @@ def telegram_disconnect(request):
 
 
 # ---------------------------------------------------------------------------
-# Telegram akkaunt HOLATI — biznes admin panelida ham ko'rinadi.
-# MUHIM: bu yerda faqat HOLAT (ulanganmi/yo'qmi) va "Uzish" tugmasi bor —
-# yangi akkaunt ULASH (telefon+kod+2FA) jarayoni FAQAT super adminda
-# (/saidex/telegram-account/) qoladi, bu yerga chiqarilmaydi.
+# Telegram akkaunt — biznes admin panelida ham to'liq ishlaydi (holat, ulash
+# va uzish). Mantiq super admin bilan bir xil (_send_code_logic va h.k.),
+# faqat ruxsat darajasi (@login_required) va redirect manzili farqlanadi.
+# Bir vaqtning o'zida faqat BITTA akkaunt ulanishi mumkin (TelegramAccountConnection
+# singleton) — qaysi panel orqali ulanganidan qat'i nazar.
 # ---------------------------------------------------------------------------
 
 @login_required
 def telegram_status(request):
     connection = TelegramAccountConnection.get_solo()
-    return render(request, "assistant/telegram_status.html", {"connection": connection})
+    api_configured = bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH)
+    return render(request, "assistant/telegram_status.html", {
+        "connection": connection,
+        "api_configured": api_configured,
+    })
+
+
+@login_required
+@require_POST
+def telegram_send_code_business(request):
+    _send_code_logic(request)
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_verify_code_business(request):
+    _verify_code_logic(request)
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_verify_password_business(request):
+    _verify_password_logic(request)
+    return redirect("assistant:telegram_status")
 
 
 @login_required

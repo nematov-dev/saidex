@@ -15,7 +15,14 @@
 
 <div class="card stat-card p-4" style="max-width: 520px;">
 
-{% if connection.status == "connected" %}
+{% if not api_configured %}
+    <div class="alert alert-warning">
+        {% trans "Avval loyihaning sozlamalar fayli to'ldirilishi kerak. Buning uchun" %}
+        <a href="https://my.telegram.org/apps" target="_blank">my.telegram.org/apps</a>
+        {% trans "saytidan kerakli ma'lumotlarni oling va developerga bering." %}
+    </div>
+
+{% elif connection.status == "connected" %}
     <div class="text-center mb-3">
         <div class="fs-1 text-success"><i class="bi bi-check-circle"></i></div>
         <h5>{% trans "Ulangan" %}</h5>
@@ -29,16 +36,39 @@
         <button class="btn btn-outline-danger w-100">{% trans "Akkauntni uzish" %}</button>
     </form>
 
+{% elif connection.status == "pending_code" %}
+    <p class="text-muted">{% blocktrans with phone=connection.phone_number %}Tasdiqlash kodi <strong>{{ phone }}</strong> raqamiga
+       Telegram ilovasi orqali yuborildi (SMS emas, Telegram xabari sifatida keladi).{% endblocktrans %}</p>
+    <form method="post" action="{% url 'assistant:telegram_verify_code_business' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" required autofocus>
+        <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
+    </form>
+    <div class="form-text mt-2">{% trans "Noto'g'ri raqam kiritdingizmi? Sahifani yangilab qaytadan boshlang." %}</div>
+
+{% elif connection.status == "pending_password" %}
+    <p class="text-muted">{% trans "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan. Parolni kiriting:" %}</p>
+    <form method="post" action="{% url 'assistant:telegram_verify_password_business' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="password" name="password" class="form-control" placeholder="{% trans '2FA parol' %}" required autofocus>
+        <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
+    </form>
+
 {% else %}
     <div class="text-center mb-2">
         <div class="fs-1 text-muted"><i class="bi bi-telephone-x"></i></div>
         <h5>{% trans "Ulanmagan" %}</h5>
     </div>
-    <p class="text-muted small mb-0">
-        {% blocktrans %}Hozircha hech qanday Telegram akkaunt ulanmagan. Yangi akkaunt ulash
-        (telefon raqam + tasdiqlash kodi) faqat developer (super admin) tomonidan
-        amalga oshiriladi — bu sahifada faqat ulanish holatini ko'rasiz.{% endblocktrans %}
+    <p class="text-muted small">
+        {% blocktrans %}AI shu raqam orqali yozgan foydalanuvchilarga javob berishi uchun,
+        akkauntni shu yerdan ulang.{% endblocktrans %}
     </p>
+    <form method="post" action="{% url 'assistant:telegram_send_code_business' %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <input type="text" name="phone_number" class="form-control" placeholder="+998901234567" required autofocus>
+        <button class="btn btn-dark">{% trans "Kod yuborish" %}</button>
+    </form>
+    <div class="form-text mt-2">{% trans "Bir vaqtning o'zida faqat bitta akkaunt ulanishi mumkin." %}</div>
 {% endif %}
 
 </div>
