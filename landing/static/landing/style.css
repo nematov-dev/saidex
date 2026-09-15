@@ -99,6 +99,21 @@ body.landing {
 }
 .lang-menu button:hover { background: rgba(255,255,255,.06); }
 
+/* ---- Mobil menyu tugmasi (hamburger) — faqat tor ekranlarda ko'rinadi ---- */
+.landing-nav-cta { display: none; }
+.landing-menu-btn {
+    display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    width: 40px; height: 40px; background: transparent; border: 1px solid var(--border);
+    border-radius: .6rem; cursor: pointer; flex-shrink: 0; padding: 0;
+}
+.landing-menu-btn span {
+    display: block; width: 18px; height: 2px; background: var(--text);
+    transition: transform .2s ease, opacity .2s ease;
+}
+.landing-menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.landing-menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.landing-menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
     border-radius: .7rem; padding: .7rem 1.4rem; font-weight: 700; font-size: .95rem;
@@ -271,3 +286,46 @@ body.landing {
 .alert { border-radius: .7rem; padding: .8rem 1rem; margin-bottom: 1rem; font-size: .9rem; }
 .alert-success { background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.35); color: #6ee7a0; }
 .alert-error { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #f9a8a8; }
+
+/* ---- Mobil moslashuvchanlik (responsive) ---- */
+@media (max-width: 880px) {
+    .landing-header .bar { flex-wrap: wrap; padding: .85rem 1rem; }
+    .landing-menu-btn { display: flex; order: 3; }
+    .landing-cta-desktop { display: none; }
+    .landing-actions { order: 2; gap: .5rem; }
+    .landing-nav {
+        display: none; order: 4; flex-basis: 100%; width: 100%;
+        flex-direction: column; align-items: stretch; gap: 0;
+    }
+    .landing-nav.open {
+        display: flex; margin-top: 1rem; padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+    .landing-nav a { padding: .75rem .25rem; border-bottom: 1px solid var(--border); }
+    .landing-nav-cta {
+        display: block; margin-top: .75rem; text-align: center;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff !important; border-radius: .7rem; padding: .75rem; font-weight: 700;
+        border-bottom: none !important;
+    }
+
+    .landing .container { padding: 0 1.1rem; }
+    .landing section { padding: 3.25rem 0; }
+    .landing-hero { padding: 3rem 0 2rem; }
+    .landing-hero .cta-row { flex-direction: column; align-items: stretch; }
+    .landing-hero .cta-row .btn { width: 100%; }
+    .section-head { margin-bottom: 2rem; }
+
+    .demo-messages { min-height: 240px; max-height: 340px; }
+    .demo-input-row { flex-wrap: wrap; }
+
+    .footer-top { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+    .landing-brand { font-size: 1.05rem; }
+    .landing-brand img, .landing-brand .brand-fallback { height: 30px; width: 30px; }
+    .lang-switcher > button { padding: .4rem .6rem; font-size: .8rem; }
+    .theme-toggle-btn, .landing-menu-btn { width: 36px; height: 36px; }
+    .tariff-card .price { font-size: 1.6rem; }
+}

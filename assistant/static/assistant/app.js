@@ -12,6 +12,33 @@
         });
     }
 
+    function initMobileMenu() {
+        var openBtn = document.querySelector("[data-mobile-menu-toggle]");
+        if (!openBtn) return;
+
+        var backdrop = document.querySelector(".sidebar-backdrop");
+        if (!backdrop) {
+            backdrop = document.createElement("div");
+            backdrop.className = "sidebar-backdrop";
+            document.body.appendChild(backdrop);
+        }
+
+        function closeMenu() {
+            document.documentElement.removeAttribute("data-sidebar-open");
+        }
+        function toggleMenu() {
+            var isOpen = document.documentElement.getAttribute("data-sidebar-open") === "1";
+            document.documentElement.setAttribute("data-sidebar-open", isOpen ? "0" : "1");
+        }
+
+        openBtn.addEventListener("click", toggleMenu);
+        backdrop.addEventListener("click", closeMenu);
+        // Sidebardagi havolani bosganda menyu avtomatik yopilsin (mobil UX).
+        document.querySelectorAll(".sidebar a").forEach(function (link) {
+            link.addEventListener("click", closeMenu);
+        });
+    }
+
     function initThemeToggle() {
         var btn = document.querySelector("[data-theme-toggle]");
         if (!btn) return;
@@ -89,6 +116,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         initSidebarToggle();
+        initMobileMenu();
         initThemeToggle();
         initConfirmModals();
         initBulkSelect();

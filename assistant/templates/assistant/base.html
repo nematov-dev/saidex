@@ -22,7 +22,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="{% static 'assistant/app.css' %}" rel="stylesheet">
+    <link href="{% static 'assistant/app.css' %}?v=2" rel="stylesheet">
     <style>
         :root {
             --topbar-bg: #ffffff;
@@ -149,6 +149,9 @@
     <div class="flex-grow-1 d-flex flex-column">
         <div class="topbar">
             <div class="d-flex align-items-center gap-2">
+                <button class="sidebar-toggle-btn mobile-menu-btn" data-mobile-menu-toggle type="button" title="{% trans 'Menyu' %}">
+                    <i class="bi bi-list"></i>
+                </button>
                 <button class="theme-toggle-btn" data-theme-toggle type="button" title="{% trans 'Mavzu' %}">
                     <i class="bi bi-moon-stars"></i>
                 </button>
@@ -262,6 +265,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{% static 'assistant/app.js' %}?v=2"></script>
+<script src="{% static 'assistant/app.js' %}?v=3"></script>
 </body>
 </html>
