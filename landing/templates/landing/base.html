@@ -7,6 +7,11 @@
     <title>Saidex — {% trans "Biznesingiz uchun AI yechimlari" %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{% trans "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati." %}">
+    {% if settings.logo %}
+        <link rel="icon" type="image/png" href="{{ settings.logo.url }}">
+    {% else %}
+        <link rel="icon" type="image/svg+xml" href="{% static 'landing/favicon.svg' %}">
+    {% endif %}
     <script>
         (function () {
             try {

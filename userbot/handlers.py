@@ -344,6 +344,20 @@ def get_pending_lead(user_id):
 
 
 @sync_to_async
+def has_existing_lead(user_id):
+    """
+    Shu foydalanuvchidan avval kamida bitta Lead (ariza) qabul qilinganmi,
+    tekshiradi. MUHIM: bitta odamdan faqat BITTA marta ariza olinishi kerak —
+    aks holda, ariza muvaffaqiyatli yakunlangandan keyin foydalanuvchi
+    "Ok"/"Rahmat" kabi oddiy javob yozganda ham, AI javobi tasodifan
+    "ism"/"telefon" so'zlarini o'z ichiga olib qolsa (answer_implies_contact_
+    collection orqali), qayta-qayta yangi PendingLead/Lead ochilib ketardi.
+    """
+    from assistant.models import Lead
+    return Lead.objects.filter(telegram_user_id=user_id).exists()
+
+
+@sync_to_async
 def start_pending_lead(user_id, username, original_message):
     from assistant.models import PendingLead
     PendingLead.objects.update_or_create(
@@ -543,9 +557,11 @@ def register_handlers(client):
             # ishlamay qolgan taqdirda ham, foydalanuvchi xarid niyatini bildirgan bo'lsa,
             # ariza baribir yig'iladi (bu kalit so'zga asoslangan, AI'siz mantiq).
             if wants_lead and not pending:
-                await start_pending_lead(user_id, username, original_message=text)
-                await _send_message(event, "Bu bilan qiziqsangiz, ismingizni yozing — operatorimiz siz bilan bog'lanadi:")
-                sent_any = True
+                already_has_lead = await has_existing_lead(user_id)
+                if not already_has_lead:
+                    await start_pending_lead(user_id, username, original_message=text)
+                    await _send_message(event, "Bu bilan qiziqsangiz, ismingizni yozing — operatorimiz siz bilan bog'lanadi:")
+                    sent_any = True
 
             if sent_any:
                 await _mark_read(event)
