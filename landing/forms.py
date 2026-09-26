@@ -47,7 +47,7 @@ class TariffForm(forms.ModelForm):
         fields = ["name", "price", "period", "features", "is_featured", "is_active", "order"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Tarif nomi")}),
-            "price": forms.TextInput(attrs={"class": "form-control", "placeholder": "650 000 so'm"}),
+            "price": forms.TextInput(attrs={"class": "form-control", "placeholder": "$59"}),
             "period": forms.Select(attrs={"class": "form-select"}),
             "features": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": _("Har qatorda bitta xususiyat")}),
             "is_featured": forms.CheckboxInput(attrs={"class": "form-check-input"}),

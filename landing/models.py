@@ -38,7 +38,7 @@ class Tariff(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    price = models.CharField(max_length=100, help_text="Masalan: 650 000 so'm")
+    price = models.CharField(max_length=100, help_text="Masalan: $59")
     period = models.CharField(max_length=10, choices=PERIOD_CHOICES, default="monthly")
     features = models.TextField(help_text="Har bir xususiyat alohida qatorda yoziladi.")
     is_featured = models.BooleanField(default=False, help_text="Eng ommabop deb belgilash.")
