@@ -1,0 +1,62 @@
+{% load i18n %}
+<div class="text-center" data-qr-login data-poll-url="{{ poll_url }}">
+    <h5 class="mb-3">{% trans "QR-kodni skanerlang" %}</h5>
+    <div class="d-inline-block p-3 bg-white rounded-3 border mb-3">
+        <div data-qr-box style="width: 220px; height: 220px;" class="d-flex align-items-center justify-content-center">
+            <div class="spinner-border text-secondary" role="status"></div>
+        </div>
+    </div>
+    <ol class="text-start small text-muted mx-auto" style="max-width: 380px;">
+        <li>{% trans "Telefoningizda Telegram ilovasini oching" %}</li>
+        <li>{% trans "Sozlamalar → Qurilmalar → \"Kompyuterni ulash\" (Link Desktop Device)" %}</li>
+        <li>{% trans "Shu QR-kodga kamerani qarating" %}</li>
+    </ol>
+    <div class="small text-danger d-none" data-qr-error></div>
+    <div class="form-text">{% trans "QR-kod har ~30 soniyada avtomatik yangilanadi. Skanerlangach sahifa o'zi yangilanadi." %}</div>
+</div>
+<form method="post" action="{{ cancel_url }}" class="mt-3">
+    {% csrf_token %}
+    <button class="btn btn-outline-secondary btn-sm w-100">
+        <i class="bi bi-arrow-left"></i> {% trans "Bekor qilish" %}
+    </button>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+    var root = document.querySelector("[data-qr-login]");
+    if (!root) return;
+    var box = root.querySelector("[data-qr-box]");
+    var errorBox = root.querySelector("[data-qr-error]");
+    var qr = null, currentUrl = null, stopped = false;
+
+    function render(url) {
+        if (url === currentUrl) return;
+        currentUrl = url;
+        box.innerHTML = "";
+        qr = new QRCode(box, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    }
+
+    function poll() {
+        if (stopped) return;
+        fetch(root.dataset.pollUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.status === "pending_qr" && data.url) {
+                    errorBox.classList.add("d-none");
+                    render(data.url);
+                    setTimeout(poll, 3000);
+                } else if (data.status === "error") {
+                    errorBox.textContent = data.message;
+                    errorBox.classList.remove("d-none");
+                    setTimeout(poll, 6000);
+                } else {
+                    stopped = true;
+                    window.location.reload();
+                }
+            })
+            .catch(function () { setTimeout(poll, 6000); });
+    }
+    poll();
+})();
+</script>

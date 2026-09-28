@@ -1,0 +1,11 @@
+<script>
+// Tugma ikki marta bosilsa so'rov ikki marta ketmasligi uchun (masalan "Kod yuborish" —
+// ikkinchi so'rov birinchi kodni bekor qiladi): yuborilgan formaning tugmalari o'chiriladi.
+document.querySelectorAll("form[data-submit-once]").forEach(function (form) {
+    form.addEventListener("submit", function () {
+        form.querySelectorAll("button").forEach(function (btn) {
+            setTimeout(function () { btn.disabled = true; }, 0);
+        });
+    });
+});
+</script>

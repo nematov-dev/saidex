@@ -47,14 +47,14 @@
         <i class="bi bi-info-circle"></i>
         {{ connection.code_delivery|default:_("Telegram ilovasidagi rasmiy \"Telegram\" chatiga (SMS emas).") }}
     </div>
-    <form method="post" action="{% url 'assistant:telegram_verify_code_business' %}" class="d-flex gap-2">
+    <form method="post" action="{% url 'assistant:telegram_verify_code_business' %}" class="d-flex gap-2" data-submit-once>
         {% csrf_token %}
         <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" inputmode="numeric" autocomplete="one-time-code" required autofocus>
         <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
     </form>
     <div class="form-text mt-2">{% trans "Kod kelmadimi? Telegram ilovasidagi chatlar ro'yxatida ko'k belgili rasmiy \"Telegram\" chatini tekshiring. Kodni hech kimga yubormang va boshqa chatga forward qilmang — aks holda Telegram uni bekor qiladi." %}</div>
     {% if connection.code_next_delivery %}
-    <form method="post" action="{% url 'assistant:telegram_resend_code_business' %}" class="mt-3">
+    <form method="post" action="{% url 'assistant:telegram_resend_code_business' %}" class="mt-3" data-submit-once>
         {% csrf_token %}
         <button class="btn btn-outline-primary btn-sm w-100">
             <i class="bi bi-arrow-repeat"></i> {% trans "Kodni qayta yuborish" %} — {{ connection.code_next_delivery }}
@@ -69,9 +69,14 @@
         </button>
     </form>
 
+{% elif connection.status == "pending_qr" %}
+    {% url 'assistant:telegram_qr_poll_business' as poll_url %}
+    {% url 'assistant:telegram_cancel_business' as cancel_url %}
+    {% include "assistant/_telegram_qr_pending.html" with poll_url=poll_url cancel_url=cancel_url %}
+
 {% elif connection.status == "pending_password" %}
     <p class="text-muted">{% trans "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan. Parolni kiriting:" %}</p>
-    <form method="post" action="{% url 'assistant:telegram_verify_password_business' %}" class="d-flex gap-2">
+    <form method="post" action="{% url 'assistant:telegram_verify_password_business' %}" class="d-flex gap-2" data-submit-once>
         {% csrf_token %}
         <input type="password" name="password" class="form-control" placeholder="{% trans '2FA parol' %}" required autofocus>
         <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
@@ -93,13 +98,22 @@
         {% blocktrans %}AI shu raqam orqali yozgan foydalanuvchilarga javob berishi uchun,
         akkauntni shu yerdan ulang.{% endblocktrans %}
     </p>
-    <form method="post" action="{% url 'assistant:telegram_send_code_business' %}" class="d-flex gap-2">
+    <form method="post" action="{% url 'assistant:telegram_qr_start_business' %}" data-submit-once>
         {% csrf_token %}
-        <input type="text" name="phone_number" class="form-control" placeholder="+998901234567" required autofocus>
+        <button class="btn btn-primary w-100">
+            <i class="bi bi-qr-code-scan"></i> {% trans "QR-kod orqali ulash (tavsiya etiladi)" %}
+        </button>
+    </form>
+    <div class="form-text mb-3">{% trans "Kod kutish shart emas — telefoningizdagi Telegram bilan QR-kodni skanerlaysiz." %}</div>
+    <div class="text-center text-muted small my-2">{% trans "yoki telefon raqam va kod orqali" %}</div>
+    <form method="post" action="{% url 'assistant:telegram_send_code_business' %}" class="d-flex gap-2" data-submit-once>
+        {% csrf_token %}
+        <input type="text" name="phone_number" class="form-control" placeholder="+998901234567" required>
         <button class="btn btn-dark">{% trans "Kod yuborish" %}</button>
     </form>
     <div class="form-text mt-2">{% trans "Bir vaqtning o'zida faqat bitta akkaunt ulanishi mumkin." %}</div>
 {% endif %}
 
 </div>
+{% include "assistant/_submit_once.html" %}
 {% endblock %}

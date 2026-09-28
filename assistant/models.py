@@ -469,6 +469,7 @@ class TelegramAccountConnection(models.Model):
     STATUS_CHOICES = [
         ("disconnected", _("Ulanmagan")),
         ("pending_code", _("SMS kod kutilmoqda")),
+        ("pending_qr", _("QR-kod skanerlanishi kutilmoqda")),
         ("pending_password", _("2FA parol kutilmoqda")),
         ("connected", _("Ulangan")),
     ]

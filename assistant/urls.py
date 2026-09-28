@@ -27,6 +27,8 @@ urlpatterns = [
     path("telegram/verify-code/", views.telegram_verify_code_business, name="telegram_verify_code_business"),
     path("telegram/verify-password/", views.telegram_verify_password_business, name="telegram_verify_password_business"),
     path("telegram/resend-code/", views.telegram_resend_code_business, name="telegram_resend_code_business"),
+    path("telegram/qr/start/", views.telegram_qr_start_business, name="telegram_qr_start_business"),
+    path("telegram/qr/poll/", views.telegram_qr_poll_business, name="telegram_qr_poll_business"),
     path("telegram/cancel/", views.telegram_cancel_business, name="telegram_cancel_business"),
     path("telegram/disconnect/", views.telegram_disconnect_business, name="telegram_disconnect_business"),
     path("profile/", views.profile, name="profile"),
@@ -74,6 +76,8 @@ urlpatterns = [
     path("saidex/telegram-account/verify-code/", views.telegram_verify_code, name="telegram_verify_code"),
     path("saidex/telegram-account/verify-password/", views.telegram_verify_password, name="telegram_verify_password"),
     path("saidex/telegram-account/resend-code/", views.telegram_resend_code, name="telegram_resend_code"),
+    path("saidex/telegram-account/qr/start/", views.telegram_qr_start, name="telegram_qr_start"),
+    path("saidex/telegram-account/qr/poll/", views.telegram_qr_poll, name="telegram_qr_poll"),
     path("saidex/telegram-account/cancel/", views.telegram_cancel, name="telegram_cancel"),
     path("saidex/telegram-account/disconnect/", views.telegram_disconnect, name="telegram_disconnect"),
 ]

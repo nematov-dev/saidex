@@ -28,7 +28,9 @@ from telethon.errors import (
     FloodWaitError, PhoneCodeExpiredError, PhoneCodeInvalidError, PhoneNumberBannedError,
     PhoneNumberInvalidError, SessionPasswordNeededError,
 )
-from telethon.tl.functions.auth import ResendCodeRequest
+import base64
+
+from telethon.tl.functions.auth import ExportLoginTokenRequest, ImportLoginTokenRequest, ResendCodeRequest
 from telethon.tl.types import auth as tg_auth
 from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm, WorkspaceUserUpdateForm
 from .services.phone import normalize_phone
@@ -864,6 +866,14 @@ def _send_code_logic(request, connection):
         messages.error(request, _("Bu raqam boshqa hisobga allaqachon ulangan."))
         return
 
+    # Har bir yangi so'rov oldingi kodni bekor qiladi, tez-tez so'rash esa Telegram'ning
+    # kod yuborishni jimgina to'xtatishiga olib keladi — shuning uchun 60 soniya ichida
+    # shu raqamga qayta so'ralmaydi (masalan tugma ikki marta bosilganda).
+    recently = timezone.now() - timedelta(seconds=CODE_RESEND_COOLDOWN)
+    if connection.status == "pending_code" and connection.phone_number == phone and connection.updated_at > recently:
+        messages.info(request, _("Kod allaqachon yuborildi — kiriting yoki 1 daqiqadan keyin qayta urinib ko'ring."))
+        return
+
     client = _telethon_client()
     try:
         client.connect()
@@ -874,6 +884,9 @@ def _send_code_logic(request, connection):
         messages.error(request, _telegram_error_message(exc))
     finally:
         client.disconnect()
+
+
+CODE_RESEND_COOLDOWN = 60  # soniya
 
 
 def _resend_code_logic(request, connection):
@@ -964,10 +977,77 @@ def telegram_verify_password(request):
     return redirect("assistant:telegram_account")
 
 
+def _qr_start_logic(request, connection):
+    """QR-kod orqali ulashni boshlaydi: Telegram'dan login token olinadi, sessiya saqlanadi.
+    Kod (SMS/ilova) kerak emas — foydalanuvchi QR'ni telefonidagi Telegram bilan skanerlaydi."""
+    if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
+        messages.error(
+            request,
+            _("Avval .env faylida TELEGRAM_API_ID va TELEGRAM_API_HASH to'ldiring (my.telegram.org)."),
+        )
+        return
+    if connection.is_connected:
+        messages.error(request, _("Avval joriy akkauntni uzing, keyin yangisini ulang."))
+        return
+
+    client = _telethon_client()
+    try:
+        client.connect()
+        client(ExportLoginTokenRequest(int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH, []))
+        _reset_connection(connection)
+        connection.session_string = client.session.save()
+        connection.status = "pending_qr"
+        connection.save()
+    except Exception as exc:  # noqa: BLE001
+        messages.error(request, _telegram_error_message(exc))
+    finally:
+        client.disconnect()
+
+
+def _qr_poll_logic(request, connection) -> dict:
+    """QR holatini tekshiradi (sahifa har bir necha soniyada chaqiradi). Skanerlanmagan
+    bo'lsa — joriy QR havolasini qaytaradi (Telegram uni ~30 soniyada yangilaydi);
+    skanerlangan bo'lsa — ulanishni yakunlaydi."""
+    if connection.status != "pending_qr":
+        return {"status": connection.status}
+
+    api_id, api_hash = int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH
+    client = _telethon_client(connection.session_string)
+    try:
+        client.connect()
+        try:
+            resp = client(ExportLoginTokenRequest(api_id, api_hash, []))
+            if isinstance(resp, tg_auth.LoginTokenMigrateTo):
+                # Akkaunt boshqa Telegram data-markazida — o'sha yerga o'tib tokenni import qilamiz.
+                client.loop.run_until_complete(client._switch_dc(resp.dc_id))
+                resp = client(ImportLoginTokenRequest(resp.token))
+        except SessionPasswordNeededError:
+            connection.session_string = client.session.save()
+            connection.status = "pending_password"
+            connection.save()
+            return {"status": "pending_password"}
+
+        if isinstance(resp, tg_auth.LoginTokenSuccess):
+            me = resp.authorization.user
+            connection.phone_number = f"+{me.phone}" if getattr(me, "phone", None) else ""
+            _complete_telegram_login(request, client, connection)
+            connection.refresh_from_db()
+            return {"status": connection.status}
+
+        connection.session_string = client.session.save()
+        connection.save(update_fields=["session_string", "updated_at"])
+        token = base64.urlsafe_b64encode(resp.token).decode("ascii").rstrip("=")
+        return {"status": "pending_qr", "url": f"tg://login?token={token}"}
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "error", "message": str(_telegram_error_message(exc))}
+    finally:
+        client.disconnect()
+
+
 def _cancel_pending_login(request, connection):
     """Kod yoki 2FA parol kutilayotgan (hali ulanmagan) holatni bekor qiladi — masalan
     noto'g'ri raqam kiritilgan bo'lsa, foydalanuvchi raqam kiritish bosqichiga qaytadi."""
-    if connection.status in ("pending_code", "pending_password"):
+    if connection.status in ("pending_code", "pending_qr", "pending_password"):
         _reset_connection(connection)
         messages.info(request, _("Bekor qilindi. Telefon raqamini qaytadan kiriting."))
 
@@ -993,6 +1073,18 @@ def _disconnect_telegram_account(connection):
 def telegram_resend_code(request):
     _resend_code_logic(request, _main_workspace(request).telegram_connection)
     return redirect("assistant:telegram_account")
+
+
+@superadmin_required
+@require_POST
+def telegram_qr_start(request):
+    _qr_start_logic(request, _main_workspace(request).telegram_connection)
+    return redirect("assistant:telegram_account")
+
+
+@superadmin_required
+def telegram_qr_poll(request):
+    return JsonResponse(_qr_poll_logic(request, _main_workspace(request).telegram_connection))
 
 
 @superadmin_required
@@ -1053,6 +1145,18 @@ def telegram_verify_password_business(request):
 def telegram_resend_code_business(request):
     _resend_code_logic(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_qr_start_business(request):
+    _qr_start_logic(request, _workspace(request).telegram_connection)
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+def telegram_qr_poll_business(request):
+    return JsonResponse(_qr_poll_logic(request, _workspace(request).telegram_connection))
 
 
 @login_required
