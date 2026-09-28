@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -36,8 +37,21 @@ class Tariff(models.Model):
         ("monthly", _("Oylik")),
         ("yearly", _("Yillik")),
     ]
+    PLAN_CODE_CHOICES = [
+        ("", _("— (faqat saytda ko'rinadi)")),
+        ("free", _("Bepul obuna")),
+        ("pro", _("Pro obuna")),
+    ]
 
     name = models.CharField(max_length=100)
+    plan_code = models.CharField(
+        max_length=10, choices=PLAN_CODE_CHOICES, blank=True, default="",
+        help_text="Qaysi obunaga tegishli: panelda ko'rsatiladigan narx va bepul limit shu yerdan olinadi.",
+    )
+    question_limit = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Faqat Bepul obuna uchun: yangi ro'yxatdan o'tganlarga beriladigan savol-javoblar soni.",
+    )
     price = models.CharField(max_length=100, help_text="Masalan: $59")
     period = models.CharField(max_length=10, choices=PERIOD_CHOICES, default="monthly")
     features = models.TextField(help_text="Har bir xususiyat alohida qatorda yoziladi.")
@@ -55,8 +69,28 @@ class Tariff(models.Model):
 
     @property
     def is_free(self) -> bool:
-        """Narxda noldan boshqa raqam yo'q bo'lsa ("$0", "0 so'm") — bepul tarif."""
+        """Bepul obuna tarifi (yoki obunaga bog'lanmagan, narxida noldan boshqa raqam yo'q tarif)."""
+        if self.plan_code:
+            return self.plan_code == "free"
         return not any(ch in "123456789" for ch in self.price)
+
+    @classmethod
+    def for_plan(cls, plan_code: str):
+        return cls.objects.filter(plan_code=plan_code).order_by("order", "id").first()
+
+    @classmethod
+    def pro_price(cls) -> str:
+        """Panel va saytda ko'rsatiladigan Pro narxi — "Pro obuna" tarifidan, bo'lmasa .env'dan."""
+        tariff = cls.for_plan("pro")
+        return tariff.price if tariff else settings.PRO_PLAN_PRICE
+
+    @classmethod
+    def free_question_limit(cls) -> int:
+        """Yangi ro'yxatdan o'tganlarga beriladigan bepul savollar soni — "Bepul obuna" tarifidan, bo'lmasa .env'dan."""
+        tariff = cls.for_plan("free")
+        if tariff and tariff.question_limit is not None:
+            return tariff.question_limit
+        return settings.FREE_PLAN_QUESTION_LIMIT
 
     @property
     def feature_list(self) -> list[str]:

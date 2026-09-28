@@ -20,6 +20,26 @@
     </div>
 </div>
 
+{% if users_stats %}
+<div class="card stat-card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h5 class="m-0"><i class="bi bi-people-fill"></i> {% trans "Foydalanuvchilar" %}</h5>
+        <div class="d-flex gap-2">
+            <a href="{% url 'assistant:superadmin_users' %}" class="btn btn-sm btn-dark">{% trans "Boshqarish" %} &rarr;</a>
+            <a href="{% url 'assistant:saidex_tariffs' %}" class="btn btn-sm btn-outline-secondary">{% trans "Tariflar va narxlar" %}</a>
+        </div>
+    </div>
+    <div class="row g-3 text-center">
+        <div class="col-4 col-md-2"><div class="text-muted small">{% trans "Jami" %}</div><div class="fs-4 fw-bold">{{ users_stats.total }}</div></div>
+        <div class="col-4 col-md-2"><div class="text-muted small">{% trans "Bugun" %}</div><div class="fs-4 fw-bold">+{{ users_stats.today }}</div></div>
+        <div class="col-4 col-md-2"><div class="text-muted small">Pro</div><div class="fs-4 fw-bold text-warning">{{ users_stats.pro }}</div></div>
+        <div class="col-4 col-md-2"><div class="text-muted small">{% trans "Bepul" %}</div><div class="fs-4 fw-bold">{{ users_stats.free }}</div></div>
+        <div class="col-4 col-md-2"><div class="text-muted small">{% trans "Limiti tugagan" %}</div><div class="fs-4 fw-bold text-danger">{{ users_stats.limit_reached }}</div></div>
+        <div class="col-4 col-md-2"><div class="text-muted small">{% trans "Telegram ulangan" %}</div><div class="fs-4 fw-bold text-success">{{ users_stats.telegram_connected }}</div></div>
+    </div>
+</div>
+{% endif %}
+
 <div class="card stat-card p-3 mb-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-3">

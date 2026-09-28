@@ -43,6 +43,10 @@ class Workspace(models.Model):
 
     owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name="workspace")
     name = models.CharField(max_length=255, blank=True, default="")
+    phone = models.CharField(
+        max_length=32, blank=True, default="", db_index=True,
+        help_text="Ro'yxatdan o'tishda kiritilgan telefon raqami (+998XXXXXXXXX).",
+    )
     is_main = models.BooleanField(
         default=False,
         help_text="Saidex'ning o'z ish maydoni — landing page demo-chati va aloqa formasi shu "
@@ -475,6 +479,10 @@ class TelegramAccountConnection(models.Model):
     phone_code_hash = models.CharField(max_length=255, blank=True, default="")
     connected_username = models.CharField(max_length=255, blank=True, default="")
     connected_first_name = models.CharField(max_length=255, blank=True, default="")
+    connected_user_id = models.BigIntegerField(
+        null=True, blank=True, db_index=True,
+        help_text="Ulangan Telegram akkauntning ID'si — bitta Telegram akkaunt faqat bitta hisobga ulanishi uchun.",
+    )
     connected_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

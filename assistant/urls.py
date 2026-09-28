@@ -39,6 +39,7 @@ urlpatterns = [
     # ------------------------------------------------------------------
     path("site/settings/", saidex_views.saidex_settings, name="saidex_settings"),
     path("site/tariffs/", saidex_views.saidex_tariffs, name="saidex_tariffs"),
+    path("site/tariffs/<int:pk>/edit/", saidex_views.saidex_tariff_edit, name="saidex_tariff_edit"),
     path("site/tariffs/<int:pk>/delete/", saidex_views.saidex_tariff_delete, name="saidex_tariff_delete"),
     path("site/portfolio/", saidex_views.saidex_portfolio, name="saidex_portfolio"),
     path("site/portfolio/<int:pk>/delete/", saidex_views.saidex_portfolio_delete, name="saidex_portfolio_delete"),
@@ -56,6 +57,7 @@ urlpatterns = [
     path("saidex/users/", views.superadmin_users, name="superadmin_users"),
     path("saidex/users/create/", views.superadmin_user_create, name="superadmin_user_create"),
     path("saidex/users/<int:pk>/", views.superadmin_user_detail, name="superadmin_user_detail"),
+    path("saidex/users/<int:pk>/update/", views.superadmin_user_update, name="superadmin_user_update"),
     path("saidex/users/<int:pk>/extend/", views.superadmin_extend, name="superadmin_extend"),
     path("saidex/users/<int:pk>/set-free/", views.superadmin_set_free, name="superadmin_set_free"),
     path("saidex/users/<int:pk>/set-limit/", views.superadmin_set_limit, name="superadmin_set_limit"),

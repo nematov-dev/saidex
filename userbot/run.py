@@ -47,6 +47,16 @@ def get_connected_sessions() -> dict[int, tuple[str, str]]:
     }
 
 
+@sync_to_async
+def remember_telegram_user_id(workspace_id: int, telegram_user_id: int):
+    """Avval ulangan (ID'si saqlanmagan) akkauntlar uchun Telegram ID'ni yozib qo'yadi —
+    bitta Telegram akkauntni ikkinchi hisobga ulashning oldini olish shunga tayanadi."""
+    from assistant.models import TelegramAccountConnection
+    TelegramAccountConnection.objects.filter(workspace_id=workspace_id, connected_user_id__isnull=True).update(
+        connected_user_id=telegram_user_id,
+    )
+
+
 class AccountRunner:
     """Bitta ish maydonining Telegram akkauntini alohida asyncio vazifasi sifatida ishlatadi."""
 
@@ -69,6 +79,8 @@ class AccountRunner:
             if not await self.client.is_user_authorized():
                 logger.warning("Ish maydoni #%s: sessiya yaroqsiz (%s) — o'tkazib yuborildi.", self.workspace_id, self.phone)
                 return
+            me = await self.client.get_me()
+            await remember_telegram_user_id(self.workspace_id, me.id)
             print(f"[workspace #{self.workspace_id}] Telegram akkaunt ishga tushdi: {self.phone}", flush=True)
             await self.client.run_until_disconnected()
         except asyncio.CancelledError:

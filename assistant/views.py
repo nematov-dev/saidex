@@ -25,7 +25,8 @@ from .models import (
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
-from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm
+from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm, WorkspaceUserUpdateForm
+from .services.phone import normalize_phone
 from .services.rag import index_document
 
 # Super admin bo'limi (/saidex/) butunlay alohida — business admin (is_staff)
@@ -144,6 +145,7 @@ def dashboard(request):
         "ai_answered_total": ai_answered_total,
         "ai_answered_percent": round(ai_answered_total * 100 / conversations_total) if conversations_total else 0,
         "recent_leads": leads[:5],
+        "users_stats": _users_stats() if request.user.is_superuser else None,
     }
     return render(request, "assistant/dashboard.html", context)
 
@@ -454,6 +456,21 @@ def superadmin_profile(request):
 USERS_PER_PAGE = 25
 
 
+def _users_stats() -> dict:
+    """Foydalanuvchilar bo'yicha umumiy sonlar (panel sahifalarining yuqorisida ko'rsatiladi)."""
+    subscriptions = list(ProjectSubscription.objects.all())
+    today = timezone.now().date()
+    return {
+        "total": Workspace.objects.count(),
+        "today": Workspace.objects.filter(created_at__date=today).count(),
+        "pro": sum(1 for sub in subscriptions if sub.is_pro),
+        "free": sum(1 for sub in subscriptions if not sub.is_pro),
+        "blocked": sum(1 for sub in subscriptions if not sub.is_active),
+        "limit_reached": sum(1 for sub in subscriptions if sub.is_active and sub.free_limit_reached),
+        "telegram_connected": TelegramAccountConnection.objects.filter(status="connected").count(),
+    }
+
+
 @superadmin_required
 def superadmin_users(request):
     """Barcha foydalanuvchilar (ish maydonlari) ro'yxati — qidiruv va tarif bo'yicha filter bilan."""
@@ -461,7 +478,8 @@ def superadmin_users(request):
     query = request.GET.get("q", "").strip()
     if query:
         qs = qs.filter(
-            Q(owner__username__icontains=query) | Q(owner__email__icontains=query) | Q(name__icontains=query)
+            Q(owner__username__icontains=query) | Q(owner__email__icontains=query)
+            | Q(name__icontains=query) | Q(phone__icontains=query)
         )
     plan = request.GET.get("plan", "")
     if plan in dict(ProjectSubscription.PLAN_CHOICES):
@@ -475,6 +493,7 @@ def superadmin_users(request):
         "plan_filter": plan,
         "plan_choices": ProjectSubscription.PLAN_CHOICES,
         "form": WorkspaceUserCreateForm(),
+        "stats": _users_stats(),
     })
 
 
@@ -515,7 +534,23 @@ def superadmin_user_detail(request, pk):
         "conversations_total": conversations.count(),
         "conversations_week": conversations.filter(created_at__gte=since_week).count(),
         "available_models": settings.AVAILABLE_LLM_MODELS,
+        "edit_form": WorkspaceUserUpdateForm(workspace=workspace),
     })
+
+
+@superadmin_required
+@require_POST
+def superadmin_user_update(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    form = WorkspaceUserUpdateForm(request.POST, workspace=workspace)
+    if form.is_valid():
+        form.save()
+        messages.success(request, _("Foydalanuvchi ma'lumotlari saqlandi."))
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+    return _redirect_user_detail(workspace)
 
 
 def _redirect_user_detail(workspace):
@@ -677,11 +712,56 @@ def telegram_account(request):
     })
 
 
+def _reset_connection(connection):
+    connection.status = "disconnected"
+    connection.phone_number = ""
+    connection.session_string = ""
+    connection.phone_code_hash = ""
+    connection.connected_username = ""
+    connection.connected_first_name = ""
+    connection.connected_user_id = None
+    connection.connected_at = None
+    connection.save()
+
+
+def _complete_telegram_login(request, client, connection):
+    """Kod/2FA tasdiqlangandan keyingi yakuniy qadam. Bitta Telegram akkaunt faqat
+    BITTA hisobga ulanishi mumkin — u allaqachon boshqa hisobga ulangan bo'lsa,
+    yangi sessiya darhol yopiladi va ulanish rad etiladi."""
+    me = client.get_me()
+    taken = (
+        TelegramAccountConnection.objects.filter(status="connected", connected_user_id=me.id)
+        .exclude(pk=connection.pk).exists()
+    )
+    if taken:
+        try:
+            client.log_out()
+        except Exception:  # noqa: BLE001 - sessiya baribir tashlab yuboriladi
+            pass
+        _reset_connection(connection)
+        messages.error(request, _("Bu Telegram akkaunt boshqa hisobga allaqachon ulangan."))
+        return
+
+    connection.session_string = client.session.save()
+    connection.connected_username = me.username or ""
+    connection.connected_first_name = me.first_name or ""
+    connection.connected_user_id = me.id
+    connection.status = "connected"
+    connection.connected_at = timezone.now()
+    connection.phone_code_hash = ""
+    connection.save()
+    messages.success(
+        request,
+        _("Ulandi: %(name)s") % {"name": me.first_name or connection.phone_number},
+    )
+
+
 def _send_code_logic(request, connection):
     """Telefon raqamiga tasdiqlash kodi yuborish — super admin va biznes admin
     ikkalasi ham ishlatadigan umumiy mantiq (faqat keyingi redirect manzili
     chaqiruvchi view'da farqlanadi)."""
-    phone = request.POST.get("phone_number", "").strip()
+    raw_phone = request.POST.get("phone_number", "").strip()
+    phone = normalize_phone(raw_phone) or raw_phone
 
     if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
         messages.error(
@@ -743,18 +823,7 @@ def _verify_code_logic(request, connection):
             messages.info(request, _("Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan — parolni kiriting."))
             return
 
-        me = client.get_me()
-        connection.session_string = client.session.save()
-        connection.connected_username = me.username or ""
-        connection.connected_first_name = me.first_name or ""
-        connection.status = "connected"
-        connection.connected_at = timezone.now()
-        connection.phone_code_hash = ""
-        connection.save()
-        messages.success(
-            request,
-            _("Ulandi: %(name)s") % {"name": me.first_name or connection.phone_number},
-        )
+        _complete_telegram_login(request, client, connection)
     except Exception as exc:  # noqa: BLE001
         messages.error(request, _("Xatolik: %(error)s") % {"error": exc})
     finally:
@@ -773,18 +842,7 @@ def _verify_password_logic(request, connection):
     try:
         client.connect()
         client.sign_in(password=password)
-        me = client.get_me()
-        connection.session_string = client.session.save()
-        connection.connected_username = me.username or ""
-        connection.connected_first_name = me.first_name or ""
-        connection.status = "connected"
-        connection.connected_at = timezone.now()
-        connection.phone_code_hash = ""
-        connection.save()
-        messages.success(
-            request,
-            _("Ulandi: %(name)s") % {"name": me.first_name or connection.phone_number},
-        )
+        _complete_telegram_login(request, client, connection)
     except Exception as exc:  # noqa: BLE001
         messages.error(
             request,
@@ -828,14 +886,7 @@ def _disconnect_telegram_account(connection):
         except Exception:  # noqa: BLE001
             pass  # sessiya allaqachon yaroqsiz bo'lishi mumkin — baribir tozalaymiz
 
-    connection.status = "disconnected"
-    connection.phone_number = ""
-    connection.session_string = ""
-    connection.phone_code_hash = ""
-    connection.connected_username = ""
-    connection.connected_first_name = ""
-    connection.connected_at = None
-    connection.save()
+    _reset_connection(connection)
 
 
 @superadmin_required

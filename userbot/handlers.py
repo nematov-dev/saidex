@@ -32,6 +32,8 @@ from asgiref.sync import sync_to_async
 from telethon import events
 from telethon.errors import FloodWaitError
 
+from assistant.services.phone import normalize_phone
+
 logger = logging.getLogger(__name__)
 
 # Ism xabaridan tez-tez uchraydigan kirish so'zlarini olib tashlaydi
@@ -40,11 +42,6 @@ logger = logging.getLogger(__name__)
 _NAME_PREFIX_RE = re.compile(
     r"(?i)^\s*(mening\s+ismim|ismim|ism-familiyam|men)\s*[:\-]?\s*"
 )
-
-# Telefon raqamini matndan ajratib olish uchun — foydalanuvchi qanday
-# formatda yozishidan qat'iy nazar (bo'shliq, tire, qavs, +998 bilan yoki
-# bilarsiz) ishlaydigan oddiy validator. Bu ham AI so'rovisiz, regex orqali.
-_DIGITS_RE = re.compile(r"[^\d+]")
 
 # Guruh xabarlaridagi so'zlardan boshida/oxirida turadigan tinish
 # belgilarini olib tashlash uchun (kalit so'zni aniqroq taqqoslash uchun).
@@ -103,21 +100,7 @@ def _extract_phone(text: str) -> str | None:
     Matndan O'zbekiston formatidagi telefon raqamini ajratib, +998XXXXXXXXX
     ko'rinishida qaytaradi. Mos raqam topilmasa None qaytaradi.
     """
-    digits = _DIGITS_RE.sub("", text)
-    has_plus = digits.startswith("+")
-    core = digits[1:] if has_plus else digits
-    if not core.isdigit():
-        return None
-
-    if len(core) == 9:
-        # masalan: 901234567
-        return "+998" + core
-    if len(core) == 12 and core.startswith("998"):
-        return "+" + core
-    if 9 <= len(core) <= 13:
-        # boshqa davlat kodi bo'lishi mumkin — bor holicha, "+" bilan qaytaramiz
-        return "+" + core if not has_plus else digits
-    return None
+    return normalize_phone(text)
 
 
 def _normalize_token(token: str) -> str:

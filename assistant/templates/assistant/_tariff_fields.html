@@ -1,0 +1,39 @@
+{% load i18n %}
+{% for error in form.non_field_errors %}<div class="col-12"><div class="alert alert-danger py-2 mb-0">{{ error }}</div></div>{% endfor %}
+<div class="col-md-4">
+    <label class="form-label">{% trans "Nomi" %}</label>
+    {{ form.name }}
+    {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+</div>
+<div class="col-md-4">
+    <label class="form-label">{% trans "Obuna" %}</label>
+    {{ form.plan_code }}
+    {% for error in form.plan_code.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+</div>
+<div class="col-md-2">
+    <label class="form-label">{% trans "Narxi" %}</label>
+    {{ form.price }}
+    {% for error in form.price.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+</div>
+<div class="col-md-2">
+    <label class="form-label">{% trans "Davri" %}</label>
+    {{ form.period }}
+</div>
+<div class="col-md-4">
+    <label class="form-label">{% trans "Bepul savollar soni" %}</label>
+    {{ form.question_limit }}
+    <div class="form-text">{% trans "Faqat \"Bepul obuna\" uchun." %}</div>
+</div>
+<div class="col-md-8">
+    <label class="form-label">{% trans "Imkoniyatlar (har qatorda bittadan)" %}</label>
+    {{ form.features }}
+    {% for error in form.features.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+</div>
+<div class="col-md-4 d-flex gap-4 align-items-center">
+    <label class="form-check-label d-flex gap-2 align-items-center">{{ form.is_featured }} {% trans "Ommabop" %}</label>
+    <label class="form-check-label d-flex gap-2 align-items-center">{{ form.is_active }} {% trans "Saytda ko'rinsin" %}</label>
+</div>
+<div class="col-md-2">
+    <label class="form-label">{% trans "Tartib" %}</label>
+    {{ form.order }}
+</div>

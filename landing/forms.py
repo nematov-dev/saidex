@@ -12,12 +12,17 @@ class RegistrationForm(WorkspaceUserCreateForm):
     bilan boshlanadi — Pro'ga faqat super admin o'tkazadi (Telegram orqali murojaatdan keyin).
     """
 
+    field_order = ["email", "phone", "name", "password", "password2"]
     plan = None
     pro_days = None
     password2 = forms.CharField(
         label=_("Parolni takrorlang"),
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["phone"].required = True
 
     def clean(self):
         cleaned = super().clean()
@@ -66,9 +71,13 @@ class LandingSettingsForm(forms.ModelForm):
 class TariffForm(forms.ModelForm):
     class Meta:
         model = Tariff
-        fields = ["name", "price", "period", "features", "is_featured", "is_active", "order"]
+        fields = [
+            "name", "plan_code", "price", "question_limit", "period", "features", "is_featured", "is_active", "order",
+        ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Tarif nomi")}),
+            "plan_code": forms.Select(attrs={"class": "form-select"}),
+            "question_limit": forms.NumberInput(attrs={"class": "form-control", "placeholder": "20"}),
             "price": forms.TextInput(attrs={"class": "form-control", "placeholder": "$59"}),
             "period": forms.Select(attrs={"class": "form-select"}),
             "features": forms.Textarea(attrs={"class": "form-control", "rows": 4, "placeholder": _("Har qatorda bitta xususiyat")}),
@@ -76,6 +85,14 @@ class TariffForm(forms.ModelForm):
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "order": forms.NumberInput(attrs={"class": "form-control", "style": "max-width:100px;"}),
         }
+
+    def clean_plan_code(self):
+        plan_code = self.cleaned_data.get("plan_code", "")
+        if plan_code:
+            taken = Tariff.objects.filter(plan_code=plan_code).exclude(pk=self.instance.pk)
+            if taken.exists():
+                raise forms.ValidationError(_("Bu obunaga boshqa tarif allaqachon bog'langan."))
+        return plan_code
 
 
 class PortfolioItemForm(forms.ModelForm):

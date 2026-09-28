@@ -49,6 +49,21 @@ def saidex_tariffs(request):
 
 
 @superadmin_required
+def saidex_tariff_edit(request, pk):
+    """Tarifni tahrirlash — jumladan Pro narxi va bepul savollar limitini o'zgartirish."""
+    tariff = get_object_or_404(Tariff, pk=pk)
+    if request.method == "POST":
+        form = TariffForm(request.POST, instance=tariff)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Tarif saqlandi."))
+            return redirect("assistant:saidex_tariffs")
+    else:
+        form = TariffForm(instance=tariff)
+    return render(request, "assistant/saidex_tariff_edit.html", {"form": form, "tariff": tariff})
+
+
+@superadmin_required
 @require_POST
 def saidex_tariff_delete(request, pk):
     get_object_or_404(Tariff, pk=pk).delete()

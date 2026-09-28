@@ -97,6 +97,23 @@
             </button>
         </div>
 
+        {% if request.user.is_superuser %}
+        {% with url_name=request.resolver_match.url_name %}
+        <div class="nav-section-label">{% trans "Boshqaruv" %}</div>
+        <nav class="nav flex-column gap-1">
+            <a href="{% url 'assistant:superadmin_users' %}"
+               class="{% if url_name == 'superadmin_users' or url_name == 'superadmin_user_detail' %}active{% endif %}">
+                <i class="bi bi-people-fill"></i> <span class="nav-label">{% trans "Foydalanuvchilar" %}</span>
+                <span class="badge rounded-pill bg-secondary ms-auto nav-label">{{ ADMIN_USERS_COUNT }}</span>
+            </a>
+            <a href="{% url 'assistant:saidex_tariffs' %}"
+               class="{% if url_name == 'saidex_tariffs' or url_name == 'saidex_tariff_edit' %}active{% endif %}">
+                <i class="bi bi-tags"></i> <span class="nav-label">{% trans "Tariflar va narxlar" %}</span>
+            </a>
+        </nav>
+        {% endwith %}
+        {% endif %}
+
         <div class="nav-section-label">{% trans "Asosiy" %}</div>
         <nav class="nav flex-column gap-1">
             <a href="{% url 'assistant:dashboard' %}"
@@ -134,12 +151,8 @@
         </nav>
 
         {% if request.user.is_superuser %}
-        <div class="nav-section-label">Saidex</div>
+        <div class="nav-section-label">{% trans "Sayt kontenti" %}</div>
         <nav class="nav flex-column gap-1">
-            <a href="{% url 'assistant:saidex_tariffs' %}"
-               class="{% if request.resolver_match.url_name == 'saidex_tariffs' %}active{% endif %}">
-                <i class="bi bi-tags"></i> <span class="nav-label">{% trans "Tariflar" %}</span>
-            </a>
             <a href="{% url 'assistant:saidex_portfolio' %}"
                class="{% if request.resolver_match.url_name == 'saidex_portfolio' %}active{% endif %}">
                 <i class="bi bi-images"></i> <span class="nav-label">{% trans "Qilingan ishlar" %}</span>
@@ -151,9 +164,6 @@
             <a href="{% url 'assistant:saidex_settings' %}"
                class="{% if request.resolver_match.url_name == 'saidex_settings' %}active{% endif %}">
                 <i class="bi bi-globe"></i> <span class="nav-label">{% trans "Sayt sozlamalari" %}</span>
-            </a>
-            <a href="{% url 'assistant:superadmin_users' %}">
-                <i class="bi bi-shield-lock"></i> <span class="nav-label">{% trans "Super admin" %}</span>
             </a>
         </nav>
         {% endif %}

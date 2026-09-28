@@ -1,4 +1,4 @@
-{% extends "assistant/superadmin_base.html" %}
+{% extends "assistant/base.html" %}
 {% load i18n %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
@@ -8,6 +8,50 @@
     </button>
 </div>
 
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-2">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">{% trans "Jami" %}</div>
+            <div class="fs-3 fw-bold">{{ stats.total }}</div>
+            <div class="text-muted small">{% blocktrans with today=stats.today %}bugun: +{{ today }}{% endblocktrans %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <a href="?plan=pro" class="text-reset text-decoration-none">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">Pro</div>
+            <div class="fs-3 fw-bold text-warning">{{ stats.pro }}</div>
+        </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-2">
+        <a href="?plan=free" class="text-reset text-decoration-none">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">{% trans "Bepul" %}</div>
+            <div class="fs-3 fw-bold">{{ stats.free }}</div>
+        </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">{% trans "Limiti tugagan" %}</div>
+            <div class="fs-3 fw-bold text-danger">{{ stats.limit_reached }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">{% trans "Bloklangan" %}</div>
+            <div class="fs-3 fw-bold">{{ stats.blocked }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat-card p-3 h-100">
+            <div class="text-muted small">{% trans "Telegram ulangan" %}</div>
+            <div class="fs-3 fw-bold text-success">{{ stats.telegram_connected }}</div>
+        </div>
+    </div>
+</div>
+
 <div class="collapse mb-4" id="createUserForm">
     <div class="card stat-card p-4">
         <form method="post" action="{% url 'assistant:superadmin_user_create' %}" class="row g-3">
@@ -15,6 +59,10 @@
             <div class="col-md-4">
                 <label class="form-label">{{ form.email.label }}</label>
                 {{ form.email }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">{{ form.phone.label }}</label>
+                {{ form.phone }}
             </div>
             <div class="col-md-4">
                 <label class="form-label">{{ form.name.label }}</label>
@@ -33,7 +81,7 @@
                 {{ form.pro_days }}
                 <div class="form-text">{% trans "Faqat Pro tarif tanlansa hisobga olinadi." %}</div>
             </div>
-            <div class="col-md-4 d-flex align-items-end">
+            <div class="col-md-8 d-flex align-items-end">
                 <button class="btn btn-dark w-100" type="submit">{% trans "Qo'shish" %}</button>
             </div>
         </form>
@@ -42,7 +90,7 @@
 
 <form method="get" class="d-flex flex-wrap gap-2 mb-3">
     <input type="search" name="q" value="{{ query }}" class="form-control" style="max-width: 320px;"
-           placeholder="{% trans 'Email, login yoki biznes nomi' %}">
+           placeholder="{% trans 'Email, telefon yoki biznes nomi' %}">
     <select name="plan" class="form-select" style="max-width: 160px;">
         <option value="">{% trans "Barcha tariflar" %}</option>
         {% for value, label in plan_choices %}
@@ -58,6 +106,7 @@
         <thead>
             <tr>
                 <th>{% trans "Email / login" %}</th>
+                <th>{% trans "Telefon" %}</th>
                 <th>{% trans "Biznes nomi" %}</th>
                 <th>{% trans "Tarif" %}</th>
                 <th>{% trans "Savol-javob" %}</th>
@@ -75,6 +124,7 @@
                     {% if ws.is_main %}<span class="badge bg-info">Saidex</span>{% endif %}
                     {% if ws.owner.is_superuser %}<span class="badge bg-dark">admin</span>{% endif %}
                 </td>
+                <td class="text-nowrap">{{ ws.phone|default:"—" }}</td>
                 <td>{{ ws.name|default:"—" }}</td>
                 <td>
                     {% if sub.is_pro %}
@@ -98,7 +148,7 @@
             </tr>
             {% endwith %}
         {% empty %}
-            <tr><td colspan="7" class="text-center text-muted py-4">{% trans "Foydalanuvchi topilmadi" %}</td></tr>
+            <tr><td colspan="8" class="text-center text-muted py-4">{% trans "Foydalanuvchi topilmadi" %}</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -1,0 +1,17 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<a href="{% url 'assistant:saidex_tariffs' %}" class="small">&larr; {% trans "Tariflar va narxlar" %}</a>
+<h3 class="mt-1 mb-4">{% blocktrans with name=tariff.name %}"{{ name }}" tarifini tahrirlash{% endblocktrans %}</h3>
+
+<div class="card stat-card p-4">
+    <form method="post" class="row g-3">
+        {% csrf_token %}
+        {% include "assistant/_tariff_fields.html" %}
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-dark" type="submit">{% trans "Saqlash" %}</button>
+            <a href="{% url 'assistant:saidex_tariffs' %}" class="btn btn-outline-secondary">{% trans "Bekor qilish" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
