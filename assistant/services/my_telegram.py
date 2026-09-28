@@ -10,6 +10,7 @@ shu jarayonni mijoz nomidan bajaradi:
   2. fetch_api_credentials(phone, random_hash, code) -> my.telegram.org'ga kiradi, ilova
      bo'lmasa yaratadi va (api_id, api_hash) ni qaytaradi.
 """
+import logging
 import random
 import re
 import string
@@ -32,6 +33,15 @@ HEADERS = {
 _API_ID_RE = re.compile(r"App api_id:.*?<strong>\s*(\d+)\s*</strong>", re.S)
 _API_HASH_RE = re.compile(r"App api_hash:.*?>\s*([0-9a-f]{32})\s*<", re.S)
 _CREATE_HASH_RE = re.compile(r'name="hash"\s+value="([^"]+)"')
+
+logger = logging.getLogger(__name__)
+
+# Ilova yaratishga urinishlar: my.telegram.org birinchisini "ERROR" bilan rad etsa, boshqa
+# nom/platforma bilan yana urinib ko'riladi.
+CREATE_ATTEMPTS = [
+    ("Saidex AI Assistant", "desktop"),
+    ("Saidex Helper App", "other"),
+]
 
 
 class MyTelegramError(Exception):
@@ -77,6 +87,37 @@ def _random_shortname() -> str:
     return "saidex" + "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 
+def _create_app(session: requests.Session, form_hash: str):
+    """Ilova yaratadi (brauzerdagidek /apps sahifasidan). "ERROR" javobidan keyin ham ilova
+    ba'zan baribir yaratilgan bo'ladi — shuning uchun har urinishdan keyin sahifa qayta o'qiladi."""
+    last_response = ""
+    for title, platform in CREATE_ATTEMPTS:
+        create = session.post(f"{BASE_URL}/apps/create", data={
+            "hash": form_hash,
+            "app_title": title,
+            "app_shortname": _random_shortname(),
+            "app_url": "",
+            "app_platform": platform,
+            "app_desc": "",
+        }, headers={"Referer": f"{BASE_URL}/apps"}, timeout=TIMEOUT)
+        last_response = create.text.strip()
+        html = session.get(f"{BASE_URL}/apps", timeout=TIMEOUT).text
+        credentials = _parse_credentials(html)
+        if credentials:
+            return credentials
+        logger.warning("my.telegram.org ilova yaratish javobi (%s/%s): %r", title, platform, last_response[:300])
+        match = _CREATE_HASH_RE.search(html)
+        if match:
+            form_hash = match.group(1)
+
+    raise MyTelegramError(_(
+        "my.telegram.org ilova yaratishni rad etdi. Bu odatda server (hosting) IP manzili sababli bo'ladi. "
+        "Kalitni qo'lda oling: telefoningizda my.telegram.org saytini oching, \"API development tools\" "
+        "bo'limida ilova yarating va App api_id hamda App api_hash qiymatlarini pastdagi "
+        "\"Kalitni qo'lda kiritish\" bo'limiga kiriting."
+    ))
+
+
 def fetch_api_credentials(phone: str, random_hash: str, code: str) -> tuple[int, str]:
     """my.telegram.org'ga kiradi va (api_id, api_hash) ni qaytaradi — ilova bo'lmasa yaratadi."""
     session = requests.Session()
@@ -96,22 +137,7 @@ def fetch_api_credentials(phone: str, random_hash: str, code: str) -> tuple[int,
             match = _CREATE_HASH_RE.search(html)
             if not match:
                 raise MyTelegramError(_("my.telegram.org'da ilovalar sahifasini o'qib bo'lmadi. Kalitni qo'lda kiriting."))
-            create = session.post(f"{BASE_URL}/apps/create", data={
-                "hash": match.group(1),
-                "app_title": "Saidex AI Assistant",
-                "app_shortname": _random_shortname(),
-                "app_url": "",
-                "app_platform": "desktop",
-                "app_desc": "",
-            }, timeout=TIMEOUT)
-            if create.text.strip().upper().startswith("ERROR"):
-                raise MyTelegramError(_(
-                    "my.telegram.org ilova yaratishni rad etdi (bu ko'pincha VPN yoki tez-tez urinish sababli "
-                    "bo'ladi). Birozdan keyin qayta urinib ko'ring yoki kalitni qo'lda kiriting."
-                ))
-            credentials = _parse_credentials(session.get(f"{BASE_URL}/apps", timeout=TIMEOUT).text)
-            if credentials is None:
-                raise MyTelegramError(_("Ilova yaratildi, lekin kalitni o'qib bo'lmadi. Kalitni qo'lda kiriting."))
+            credentials = _create_app(session, match.group(1))
         return credentials
     except requests.RequestException as exc:
         raise MyTelegramError(_("my.telegram.org'ga ulanib bo'lmadi: %(error)s") % {"error": exc}) from exc

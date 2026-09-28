@@ -64,12 +64,15 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/service-account.json
+    # Sog'lomlik tekshiruvi: gunicorn 8000-portni tinglayaptimi (TCP). MUHIM: avval HTTP so'rov
+    # yuborilardi, lekin serverda DJANGO_ALLOWED_HOSTS'da "localhost" yo'qligi sababli Django 400
+    # qaytarib, konteyner doim "unhealthy" bo'lib qolardi. start_period — migratsiya + collectstatic uchun.
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8000), 5).close()"]
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 180s
     depends_on:
       postgres:
         condition: service_healthy

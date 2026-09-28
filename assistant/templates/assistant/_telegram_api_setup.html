@@ -27,12 +27,15 @@
 </form>
 <div class="form-text mt-2">{% trans "Ulamoqchi bo'lgan Telegram akkauntingiz raqamini kiriting." %}</div>
 
-<details class="mt-3">
-    <summary class="small text-muted">{% trans "Kalitni qo'lda kiritish" %}</summary>
-    <p class="small text-muted mt-2 mb-2">
-        {% trans "my.telegram.org/apps saytiga kiring, ilova yarating va App api_id hamda App api_hash qiymatlarini shu yerga kiriting." %}
-        <a href="https://my.telegram.org/apps" target="_blank" rel="noopener">my.telegram.org/apps</a>
-    </p>
+<details class="mt-3" {% if connection.api_setup_phone %}open{% endif %}>
+    <summary class="small fw-semibold">{% trans "Kalitni qo'lda kiritish (avtomatik ishlamasa)" %}</summary>
+    <ol class="small text-muted mt-2 mb-2 ps-3">
+        <li>{% trans "Telefoningizda (VPN'siz, mobil internet orqali) saytni oching:" %}
+            <a href="https://my.telegram.org/auth" target="_blank" rel="noopener">my.telegram.org</a></li>
+        <li>{% trans "Telegram raqamingizni kiriting va Telegram ilovasiga kelgan kodni yozing." %}</li>
+        <li>{% trans "\"API development tools\" bo'limini oching. App title: istalgan nom (masalan Saidex), Short name: kamida 5 ta lotin harf (masalan saidex123), Platform: Desktop — \"Create application\" tugmasini bosing." %}</li>
+        <li>{% trans "Chiqqan \"App api_id\" va \"App api_hash\" qiymatlarini quyiga kiriting." %}</li>
+    </ol>
     <form method="post" action="{% url 'assistant:telegram_api_manual' %}" class="row g-2" data-submit-once>
         {% csrf_token %}
         <div class="col-4"><input type="text" name="api_id" class="form-control" placeholder="api_id" inputmode="numeric" required></div>
