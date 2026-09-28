@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -40,6 +41,8 @@ from .services.rag import index_document
 # uchun mo'ljallanmagan, unga hech qanday havola ko'rsatilmaydi. Ruxsati
 # yo'q foydalanuvchi shu yerga kirishga urinsa, business login'ga emas,
 # maxsus super admin login sahifasiga (/saidex/login/) yo'naltiriladi.
+logger = logging.getLogger(__name__)
+
 superadmin_required = user_passes_test(
     lambda u: u.is_active and u.is_superuser, login_url="assistant:superadmin_login"
 )
@@ -794,6 +797,7 @@ def _describe_code_type(code_type) -> str:
 
 
 def _apply_sent_code(request, connection, client, sent) -> bool:
+    logger.warning("Telegram kod javobi (%s): %r", connection.phone_number, sent)
     """send_code_request / ResendCodeRequest natijasini saqlaydi va foydalanuvchiga kod
     qayerga borganini aytadi. Telegram kod yubormagan holatlarni (email sozlash yoki
     to'lov talab qilinishi) aniq xabar bilan qaytaradi — False."""
@@ -826,6 +830,7 @@ def _apply_sent_code(request, connection, client, sent) -> bool:
 
 
 def _telegram_error_message(exc) -> str:
+    logger.warning("Telegram ulash xatoligi: %s: %s", type(exc).__name__, exc)
     if isinstance(exc, FloodWaitError):
         return _("Telegram juda ko'p urinish sababli vaqtincha cheklov qo'ydi — %(sec)s soniyadan keyin "
                  "qayta urinib ko'ring.") % {"sec": exc.seconds}
