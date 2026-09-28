@@ -64,18 +64,22 @@ body.landing {
     background: rgba(10, 14, 28, .85); backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
 }
-.landing-header .bar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1180px; margin: 0 auto; }
-.landing-brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1.25rem; }
+.landing-header .bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+    padding: 1rem 1.5rem; max-width: 1180px; margin: 0 auto;
+}
+.landing-brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; font-size: 1.25rem; flex-shrink: 0; white-space: nowrap; }
 .landing-brand img { height: 34px; width: auto; }
 .landing-brand .brand-fallback {
     width: 34px; height: 34px; border-radius: .6rem; flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     display: flex; align-items: center; justify-content: center; font-weight: 800;
 }
-.landing-nav { display: flex; align-items: center; gap: 2rem; }
-.landing-nav a { color: var(--text-muted); font-size: .95rem; font-weight: 500; transition: color .15s; }
+.landing-nav { display: flex; align-items: center; gap: 1.6rem; min-width: 0; }
+.landing-nav a { color: var(--text-muted); font-size: .93rem; font-weight: 500; transition: color .15s; white-space: nowrap; }
 .landing-nav a:hover { color: var(--text); }
-.landing-actions { display: flex; align-items: center; gap: .75rem; }
+.landing-actions { display: flex; align-items: center; gap: .6rem; flex-shrink: 0; }
+.landing-actions .btn { white-space: nowrap; }
 .lang-switcher { position: relative; }
 .lang-switcher > button {
     display: flex; align-items: center; gap: .4rem; background: var(--bg-card);
@@ -100,7 +104,8 @@ body.landing {
 .lang-menu button:hover { background: rgba(255,255,255,.06); }
 
 /* ---- Mobil menyu tugmasi (hamburger) — faqat tor ekranlarda ko'rinadi ---- */
-.landing-nav-cta, .landing-nav-auth { display: none; }
+/* Faqat mobil menyuda ko'rinadigan havolalar (desktop'da o'ng tomondagi tugmalar bor) */
+.landing-nav-cta, .landing-nav-mobile { display: none; }
 .landing-menu-btn {
     display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
     width: 40px; height: 40px; background: transparent; border: 1px solid var(--border);
@@ -300,7 +305,9 @@ body.landing {
 .alert-error { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.35); color: #f9a8a8; }
 
 /* ---- Mobil moslashuvchanlik (responsive) ---- */
-@media (max-width: 880px) {
+/* Menyu bandlari (5 ta havola + Kirish/Ro'yxatdan o'tish) ~1150px dan torroq ekranga sig'maydi —
+   shu kenglikdan boshlab menyu hamburger ichiga yig'iladi. */
+@media (max-width: 1150px) {
     .landing-header .bar { flex-wrap: wrap; padding: .85rem 1rem; }
     .landing-menu-btn { display: flex; order: 3; }
     .landing-cta-desktop { display: none; }
@@ -314,14 +321,17 @@ body.landing {
         border-top: 1px solid var(--border);
     }
     .landing-nav a { padding: .75rem .25rem; border-bottom: 1px solid var(--border); }
-    .landing-nav-auth { display: block; }
+    .landing-nav-mobile { display: block; }
     .landing-nav-cta {
         display: block; margin-top: .75rem; text-align: center;
         background: linear-gradient(135deg, var(--accent), var(--accent-2));
         color: #fff !important; border-radius: .7rem; padding: .75rem; font-weight: 700;
         border-bottom: none !important;
     }
+}
 
+/* ---- Mobil moslashuvchanlik (sahifa kontenti) ---- */
+@media (max-width: 880px) {
     .landing .container { padding: 0 1.1rem; }
     .landing section { padding: 3.25rem 0; }
     .landing-hero { padding: 3rem 0 2rem; }

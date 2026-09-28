@@ -24,8 +24,12 @@ msgstr "онлайн"
 msgid "Biznesingiz uchun sun'iy intellekt yechimlari"
 msgstr "Решения на основе искусственного интеллекта для вашего бизнеса"
 
-msgid "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati. Mijozlaringiz bilan 24/7 muloqot qiluvchi AI yarating."
-msgstr "Saidex — сервис AI-ассистентов, Telegram-ботов и автоматизации сайтов. Создайте ИИ, который общается с вашими клиентами 24/7."
+msgid ""
+"Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish "
+"xizmati. Mijozlaringiz bilan 24/7 muloqot qiluvchi AI yarating."
+msgstr ""
+"Saidex — сервис AI-ассистентов, Telegram-ботов и автоматизации сайтов. "
+"Создайте ИИ, который общается с вашими клиентами 24/7."
 
 msgid "AI yechimlar"
 msgstr "AI-решения"
@@ -69,20 +73,35 @@ msgstr "Нажмите и задайте вопрос голосом, либо �
 msgid "Buyurtma berish"
 msgstr "Заказать"
 
-msgid "Hujjatlaringiz (PDF, Word, matn) asosida o'qitilgan AI — faqat rost va aniq ma'lumot beradi, o'zidan uydirib javob bermaydi."
-msgstr "ИИ, обученный на основе ваших документов (PDF, Word, текст), — даёт только достоверную и точную информацию, не выдумывает от себя."
+msgid ""
+"Hujjatlaringiz (PDF, Word, matn) asosida o'qitilgan AI — faqat rost va aniq "
+"ma'lumot beradi, o'zidan uydirib javob bermaydi."
+msgstr ""
+"ИИ, обученный на основе ваших документов (PDF, Word, текст), — даёт только "
+"достоверную и точную информацию, не выдумывает от себя."
 
-msgid "Hujjatlaringiz asosida o'qitilgan AI — Telegram, veb-sayt va admin panelda birgalikda ishlaydi."
-msgstr "ИИ, обученный на основе ваших документов, — работает одновременно в Telegram, на сайте и в панели администратора."
+msgid ""
+"Hujjatlaringiz asosida o'qitilgan AI — Telegram, veb-sayt va admin panelda "
+"birgalikda ishlaydi."
+msgstr ""
+"ИИ, обученный на основе ваших документов, — работает одновременно в "
+"Telegram, на сайте и в панели администратора."
 
-msgid "Hujjatlarni yuklash, AI javoblarini sozlash, mijozlar arizalarini (CRM) ko'rish uchun qulay veb-panel."
-msgstr "Удобная веб-панель для загрузки документов, настройки ответов ИИ и просмотра заявок клиентов (CRM)."
+msgid ""
+"Hujjatlarni yuklash, AI javoblarini sozlash, mijozlar arizalarini (CRM) "
+"ko'rish uchun qulay veb-panel."
+msgstr ""
+"Удобная веб-панель для загрузки документов, настройки ответов ИИ и просмотра"
+" заявок клиентов (CRM)."
 
 msgid "Ishlarimiz"
 msgstr "Наши работы"
 
-msgid "Ismingiz va telefon raqamingizni qoldiring — tez orada siz bilan bog'lanamiz."
-msgstr "Оставьте своё имя и номер телефона — мы свяжемся с вами в ближайшее время."
+msgid ""
+"Ismingiz va telefon raqamingizni qoldiring — tez orada siz bilan "
+"bog'lanamiz."
+msgstr ""
+"Оставьте своё имя и номер телефона — мы свяжемся с вами в ближайшее время."
 
 msgid "Kun/tun rejimi"
 msgstr "Дневной/ночной режим"
@@ -93,14 +112,22 @@ msgstr "Автоматический сбор лидов"
 msgid "Loyihangizni muhokama qilaylik"
 msgstr "Давайте обсудим ваш проект"
 
-msgid "Mijoz xarid niyatini bildirsa, AI avtomatik ism va telefon so'rab, arizani sizga CRM tarzida taqdim etadi."
-msgstr "Если клиент проявляет намерение купить, ИИ автоматически запрашивает имя и телефон и передаёт вам заявку в виде CRM."
+msgid ""
+"Mijoz xarid niyatini bildirsa, AI avtomatik ism va telefon so'rab, arizani "
+"sizga CRM tarzida taqdim etadi."
+msgstr ""
+"Если клиент проявляет намерение купить, ИИ автоматически запрашивает имя и "
+"телефон и передаёт вам заявку в виде CRM."
 
 msgid "Mijozlar fikri"
 msgstr "Отзывы клиентов"
 
-msgid "Necha kishi murojaat qildi, nechta savolga AI javob berdi, nechta ariza tushdi — barchasi panelda ko'rinadi."
-msgstr "Сколько человек обратилось, на сколько вопросов ответил ИИ, сколько поступило заявок — всё видно в панели."
+msgid ""
+"Necha kishi murojaat qildi, nechta savolga AI javob berdi, nechta ariza "
+"tushdi — barchasi panelda ko'rinadi."
+msgstr ""
+"Сколько человек обратилось, на сколько вопросов ответил ИИ, сколько "
+"поступило заявок — всё видно в панели."
 
 msgid "Ommabop"
 msgstr "Популярный"
@@ -111,14 +138,25 @@ msgstr "Портфолио"
 msgid "Qilingan ishlarimiz"
 msgstr "Наши выполненные проекты"
 
-msgid "Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish xizmati."
-msgstr "Saidex — сервис AI-ассистентов, Telegram-ботов и автоматизации сайтов."
+msgid ""
+"Saidex — AI-yordamchilar, Telegram botlar va veb-sayt avtomatlashtirish "
+"xizmati."
+msgstr ""
+"Saidex — сервис AI-ассистентов, Telegram-ботов и автоматизации сайтов."
 
-msgid "Saidex — biznesingiz uchun ishonchli, doimiy ishlaydigan AI-yordamchi. AI-yordamchilar, Telegram bot va veb-sayt avtomatlashtirish."
-msgstr "Saidex — надёжный, постоянно работающий AI-ассистент для вашего бизнеса. AI-ассистенты, Telegram-бот и автоматизация сайта."
+msgid ""
+"Saidex — biznesingiz uchun ishonchli, doimiy ishlaydigan AI-yordamchi. AI-"
+"yordamchilar, Telegram bot va veb-sayt avtomatlashtirish."
+msgstr ""
+"Saidex — надёжный, постоянно работающий AI-ассистент для вашего бизнеса. AI-"
+"ассистенты, Telegram-бот и автоматизация сайта."
 
-msgid "Saytingizga o'rnatiladigan AI-chat oynasi — tashrif buyuruvchilar bilan real vaqtda muloqot qiladi."
-msgstr "Окно AI-чата, устанавливаемое на ваш сайт, — общается с посетителями в реальном времени."
+msgid ""
+"Saytingizga o'rnatiladigan AI-chat oynasi — tashrif buyuruvchilar bilan real"
+" vaqtda muloqot qiladi."
+msgstr ""
+"Окно AI-чата, устанавливаемое на ваш сайт, — общается с посетителями в "
+"реальном времени."
 
 msgid "Sinab ko'ring"
 msgstr "Попробуйте"
@@ -126,8 +164,12 @@ msgstr "Попробуйте"
 msgid "Tariflar"
 msgstr "Тарифы"
 
-msgid "Telegram akkaunt orqali mijozlar bilan avtomatik muloqot: savollarga javob, buyurtma qabul qilish, ariza yig'ish."
-msgstr "Автоматическое общение с клиентами через Telegram-аккаунт: ответы на вопросы, приём заказов, сбор заявок."
+msgid ""
+"Telegram akkaunt orqali mijozlar bilan avtomatik muloqot: savollarga javob, "
+"buyurtma qabul qilish, ariza yig'ish."
+msgstr ""
+"Автоматическое общение с клиентами через Telegram-аккаунт: ответы на "
+"вопросы, приём заказов, сбор заявок."
 
 msgid "Telegram orqali avtomatlashtirish"
 msgstr "Автоматизация через Telegram"
@@ -147,8 +189,11 @@ msgstr "Наши услуги"
 msgid "Xizmatlarni ko'rish"
 msgstr "Посмотреть услуги"
 
-msgid "Xuddi Telegram'dagi kabi — ovozli xabar yozing, AI matn ko'rinishida javob beradi."
-msgstr "Точно как в Telegram — надиктуйте голосовое сообщение, ИИ ответит текстом."
+msgid ""
+"Xuddi Telegram'dagi kabi — ovozli xabar yozing, AI matn ko'rinishida javob "
+"beradi."
+msgstr ""
+"Точно как в Telegram — надиктуйте голосовое сообщение, ИИ ответит текстом."
 
 msgid "Yuborish"
 msgstr "Отправить"
@@ -191,7 +236,8 @@ msgid "oy"
 msgstr "мес."
 
 msgid "AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning."
-msgstr "Чтобы включить ИИ, сначала оформите подписку — свяжитесь с администраторами."
+msgstr ""
+"Чтобы включить ИИ, сначала оформите подписку — свяжитесь с администраторами."
 
 msgid "Obuna muddati tugadi."
 msgstr "Срок подписки истёк."
@@ -813,3 +859,81 @@ msgstr "готово / всего"
 
 msgid "tugash sanasi: %(end_date)s (%(days)s kun)"
 msgstr "дата окончания: %(end_date)s (%(days)s дн.)"
+
+msgid "Ro'yxatdan o'tish"
+msgstr "Регистрация"
+
+msgid "Panel"
+msgstr "Панель"
+
+msgid "Bepul boshlash"
+msgstr "Начать бесплатно"
+
+msgid "Pro olish"
+msgstr "Получить Pro"
+
+#, python-format
+msgid ""
+"Telegram orqali <strong>@%(username)s</strong> ga murojaat qiling — "
+"to'lovdan so'ng Pro obunangiz faollashtiriladi."
+msgstr ""
+"Напишите в Telegram <strong>@%(username)s</strong> — после оплаты мы "
+"активируем вашу подписку Pro."
+
+#, python-format
+msgid ""
+"Email bilan ro'yxatdan o'ting — %(limit)s ta savol-javob bepul. "
+"Hujjatlaringizni yuklab, AI-yordamchingizni darhol sinab ko'ring."
+msgstr ""
+"Зарегистрируйтесь по email — %(limit)s вопросов-ответов бесплатно. Загрузите"
+" документы и сразу попробуйте своего ИИ-ассистента."
+
+msgid "Hisobingiz bormi?"
+msgstr "Уже есть аккаунт?"
+
+msgid "Hisobingiz yo'qmi?"
+msgstr "Нет аккаунта?"
+
+msgid "Panelga kirish"
+msgstr "Вход в панель"
+
+msgid "Email yoki login"
+msgstr "Email или логин"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Telefon raqami"
+msgstr "Номер телефона"
+
+msgid "Biznes nomi"
+msgstr "Название бизнеса"
+
+msgid "Biznes nomi (ixtiyoriy)"
+msgstr "Название бизнеса (необязательно)"
+
+msgid "Parolni takrorlang"
+msgstr "Повторите пароль"
+
+msgid "Parollar bir xil emas."
+msgstr "Пароли не совпадают."
+
+msgid "Bu email bilan hisob allaqachon mavjud."
+msgstr "Аккаунт с таким email уже существует."
+
+msgid "Bu telefon raqami bilan hisob allaqachon mavjud."
+msgstr "Аккаунт с таким номером телефона уже существует."
+
+msgid "Telefon raqamini to'g'ri kiriting, masalan: +998901234567"
+msgstr "Введите корректный номер телефона, например: +998901234567"
+
+#, python-format
+msgid "Xush kelibsiz! Sizga %(limit)s ta bepul savol-javob berildi."
+msgstr ""
+"Добро пожаловать! Вам начислено %(limit)s бесплатных вопросов-ответов."
+
+msgid "Tarif"
+msgstr "Тариф"
+
+msgid "Pro muddati (kun)"
+msgstr "Срок Pro (дней)"
