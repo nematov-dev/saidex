@@ -16,6 +16,7 @@ import re
 import string
 
 import requests
+from django.conf import settings
 from django.utils.translation import gettext as _
 
 BASE_URL = "https://my.telegram.org"
@@ -44,6 +45,17 @@ CREATE_ATTEMPTS = [
 ]
 
 
+def _proxies() -> dict | None:
+    """.env'dagi MY_TELEGRAM_PROXY_URL — server IP'si rad etilmasligi uchun (bo'sh bo'lsa proksisiz).
+    socks5h:// — DNS ham proksi orqali (socks5:// shunga aylantiriladi)."""
+    url = settings.MY_TELEGRAM_PROXY_URL.strip()
+    if not url:
+        return None
+    if url.startswith("socks5://"):
+        url = "socks5h://" + url[len("socks5://"):]
+    return {"http": url, "https": url}
+
+
 class MyTelegramError(Exception):
     """Foydalanuvchiga ko'rsatiladigan (tarjima qilingan) xato matni bilan."""
 
@@ -63,7 +75,10 @@ def _friendly_error(text: str) -> str:
 def send_password(phone: str) -> str:
     """Telegram ilovasiga my.telegram.org tasdiqlash kodini yuboradi, random_hash'ni qaytaradi."""
     try:
-        resp = requests.post(f"{BASE_URL}/auth/send_password", data={"phone": phone}, headers=HEADERS, timeout=TIMEOUT)
+        resp = requests.post(
+            f"{BASE_URL}/auth/send_password", data={"phone": phone}, headers=HEADERS, timeout=TIMEOUT,
+            proxies=_proxies(),
+        )
     except requests.RequestException as exc:
         raise MyTelegramError(_("my.telegram.org'ga ulanib bo'lmadi: %(error)s") % {"error": exc}) from exc
     try:
@@ -122,6 +137,9 @@ def fetch_api_credentials(phone: str, random_hash: str, code: str) -> tuple[int,
     """my.telegram.org'ga kiradi va (api_id, api_hash) ni qaytaradi — ilova bo'lmasa yaratadi."""
     session = requests.Session()
     session.headers.update(HEADERS)
+    proxies = _proxies()
+    if proxies:
+        session.proxies.update(proxies)
     try:
         resp = session.post(
             f"{BASE_URL}/auth/login",

@@ -181,6 +181,10 @@ RAG_TOP_K = 4                 # javob berishda nechta parcha olinadi
 # ulanadi va TelegramAccountConnection modelida (bazada) saqlanadi.
 TELEGRAM_API_ID = os.getenv("TELEGRAM_API_ID", "")
 TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH", "")
+# my.telegram.org server (hosting) IP'laridan ilova yaratishni rad etadi — shu sababli mijozlar
+# uchun API kalitini avtomatik olish so'rovlari uy/mobil IP'li proksi orqali yuboriladi.
+# Masalan: socks5://login:parol@1.2.3.4:1080 yoki http://login:parol@1.2.3.4:8080. Bo'sh — proksisiz.
+MY_TELEGRAM_PROXY_URL = os.getenv("MY_TELEGRAM_PROXY_URL", "")
 
 # ---- Obuna tugashi haqida ogohlantirish yuboriladigan Telegram ID (super admin) ----
 SUPERADMIN_TELEGRAM_ID = os.getenv("SUPERADMIN_TELEGRAM_ID", "")
