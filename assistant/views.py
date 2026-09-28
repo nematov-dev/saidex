@@ -873,6 +873,14 @@ def telegram_verify_password(request):
     return redirect("assistant:telegram_account")
 
 
+def _cancel_pending_login(request, connection):
+    """Kod yoki 2FA parol kutilayotgan (hali ulanmagan) holatni bekor qiladi — masalan
+    noto'g'ri raqam kiritilgan bo'lsa, foydalanuvchi raqam kiritish bosqichiga qaytadi."""
+    if connection.status in ("pending_code", "pending_password"):
+        _reset_connection(connection)
+        messages.info(request, _("Bekor qilindi. Telefon raqamini qaytadan kiriting."))
+
+
 def _disconnect_telegram_account(connection):
     """Telethon sessiyasini tugatib, TelegramAccountConnection'ni tozalaydi.
     Ham super admin, ham biznes admin uzish tugmasi shu funksiyani ishlatadi."""
@@ -887,6 +895,13 @@ def _disconnect_telegram_account(connection):
             pass  # sessiya allaqachon yaroqsiz bo'lishi mumkin — baribir tozalaymiz
 
     _reset_connection(connection)
+
+
+@superadmin_required
+@require_POST
+def telegram_cancel(request):
+    _cancel_pending_login(request, _main_workspace(request).telegram_connection)
+    return redirect("assistant:telegram_account")
 
 
 @superadmin_required
@@ -932,6 +947,13 @@ def telegram_verify_code_business(request):
 @require_POST
 def telegram_verify_password_business(request):
     _verify_password_logic(request, _workspace(request).telegram_connection)
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_cancel_business(request):
+    _cancel_pending_login(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
 
 

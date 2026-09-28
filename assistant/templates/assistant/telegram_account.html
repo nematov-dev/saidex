@@ -36,7 +36,13 @@
         <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" required autofocus>
         <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
     </form>
-    <div class="form-text mt-2">{% trans "Noto'g'ri raqam kiritdingizmi? Sahifani yangilab qaytadan boshlang." %}</div>
+
+    <form method="post" action="{% url 'assistant:telegram_cancel' %}" class="mt-3">
+        {% csrf_token %}
+        <button class="btn btn-outline-secondary btn-sm w-100">
+            <i class="bi bi-arrow-left"></i> {% trans "Raqamni o'zgartirish / bekor qilish" %}
+        </button>
+    </form>
 
 {% elif connection.status == "pending_password" %}
     <p class="text-muted">{% trans "Bu akkauntda 2 bosqichli tasdiqlash (2FA) yoqilgan. Parolni kiriting:" %}</p>
@@ -44,6 +50,13 @@
         {% csrf_token %}
         <input type="password" name="password" class="form-control" placeholder="{% trans '2FA parol' %}" required autofocus>
         <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
+    </form>
+
+    <form method="post" action="{% url 'assistant:telegram_cancel' %}" class="mt-3">
+        {% csrf_token %}
+        <button class="btn btn-outline-secondary btn-sm w-100">
+            <i class="bi bi-arrow-left"></i> {% trans "Raqamni o'zgartirish / bekor qilish" %}
+        </button>
     </form>
 
 {% else %}
