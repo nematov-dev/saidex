@@ -26,6 +26,7 @@ urlpatterns = [
     path("telegram/send-code/", views.telegram_send_code_business, name="telegram_send_code_business"),
     path("telegram/verify-code/", views.telegram_verify_code_business, name="telegram_verify_code_business"),
     path("telegram/verify-password/", views.telegram_verify_password_business, name="telegram_verify_password_business"),
+    path("telegram/resend-code/", views.telegram_resend_code_business, name="telegram_resend_code_business"),
     path("telegram/cancel/", views.telegram_cancel_business, name="telegram_cancel_business"),
     path("telegram/disconnect/", views.telegram_disconnect_business, name="telegram_disconnect_business"),
     path("profile/", views.profile, name="profile"),
@@ -72,6 +73,7 @@ urlpatterns = [
     path("saidex/telegram-account/send-code/", views.telegram_send_code, name="telegram_send_code"),
     path("saidex/telegram-account/verify-code/", views.telegram_verify_code, name="telegram_verify_code"),
     path("saidex/telegram-account/verify-password/", views.telegram_verify_password, name="telegram_verify_password"),
+    path("saidex/telegram-account/resend-code/", views.telegram_resend_code, name="telegram_resend_code"),
     path("saidex/telegram-account/cancel/", views.telegram_cancel, name="telegram_cancel"),
     path("saidex/telegram-account/disconnect/", views.telegram_disconnect, name="telegram_disconnect"),
 ]

@@ -24,7 +24,12 @@ from .models import (
 )
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
-from telethon.errors import SessionPasswordNeededError
+from telethon.errors import (
+    FloodWaitError, PhoneCodeExpiredError, PhoneCodeInvalidError, PhoneNumberBannedError,
+    PhoneNumberInvalidError, SessionPasswordNeededError,
+)
+from telethon.tl.functions.auth import ResendCodeRequest
+from telethon.tl.types import auth as tg_auth
 from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm, WorkspaceUserUpdateForm
 from .services.phone import normalize_phone
 from .services.rag import index_document
@@ -717,6 +722,8 @@ def _reset_connection(connection):
     connection.phone_number = ""
     connection.session_string = ""
     connection.phone_code_hash = ""
+    connection.code_delivery = ""
+    connection.code_next_delivery = ""
     connection.connected_username = ""
     connection.connected_first_name = ""
     connection.connected_user_id = None
@@ -756,6 +763,81 @@ def _complete_telegram_login(request, client, connection):
     )
 
 
+def _describe_code_type(code_type) -> str:
+    """Telegram kod yuborgan kanalni foydalanuvchiga tushunarli matnga aylantiradi."""
+    if code_type is None:
+        return ""
+    if isinstance(code_type, tg_auth.SentCodeTypeApp):
+        return _("Telegram ilovasiga — shu raqam ochiq turgan telefon yoki kompyuterdagi rasmiy "
+                 "\"Telegram\" chatiga (SMS emas).")
+    if isinstance(code_type, (tg_auth.SentCodeTypeSms, tg_auth.SentCodeTypeSmsWord,
+                              tg_auth.SentCodeTypeSmsPhrase, tg_auth.SentCodeTypeFirebaseSms)):
+        return _("SMS orqali.")
+    if isinstance(code_type, (tg_auth.SentCodeTypeCall, tg_auth.SentCodeTypeFlashCall,
+                              tg_auth.SentCodeTypeMissedCall)):
+        return _("qo'ng'iroq orqali (kod — qo'ng'iroq qilgan raqamning oxirgi raqamlari yoki ovozli xabar).")
+    if isinstance(code_type, tg_auth.SentCodeTypeEmailCode):
+        return _("email manzilingizga (%(email)s).") % {"email": code_type.email_pattern}
+    if isinstance(code_type, tg_auth.SentCodeTypeFragmentSms):
+        return _("Fragment (fragment.com) orqali.")
+    # CodeType* (next_type) turlari
+    name = type(code_type).__name__
+    if "Sms" in name:
+        return _("SMS orqali.")
+    if "Call" in name:
+        return _("qo'ng'iroq orqali.")
+    if "Fragment" in name:
+        return _("Fragment (fragment.com) orqali.")
+    return name
+
+
+def _apply_sent_code(request, connection, client, sent) -> bool:
+    """send_code_request / ResendCodeRequest natijasini saqlaydi va foydalanuvchiga kod
+    qayerga borganini aytadi. Telegram kod yubormagan holatlarni (email sozlash yoki
+    to'lov talab qilinishi) aniq xabar bilan qaytaradi — False."""
+    if isinstance(sent, tg_auth.SentCodePaymentRequired):
+        _reset_connection(connection)
+        messages.error(request, _(
+            "Telegram bu raqamga kod yuborish uchun to'lov talab qilmoqda. Avval shu raqam bilan "
+            "telefoningizdagi rasmiy Telegram ilovasiga kiring — shunda kod ilovaga bepul keladi."
+        ))
+        return False
+    if isinstance(getattr(sent, "type", None), tg_auth.SentCodeTypeSetUpEmailRequired):
+        _reset_connection(connection)
+        messages.error(request, _(
+            "Telegram bu akkaunt uchun avval login email'ni sozlashni talab qilmoqda: telefoningizdagi "
+            "Telegram → Sozlamalar → Maxfiylik va xavfsizlik → Login email. So'ng qaytadan urinib ko'ring."
+        ))
+        return False
+
+    connection.session_string = client.session.save()
+    connection.phone_code_hash = sent.phone_code_hash
+    connection.code_delivery = _describe_code_type(sent.type)
+    connection.code_next_delivery = _describe_code_type(getattr(sent, "next_type", None))
+    connection.status = "pending_code"
+    connection.save()
+    messages.success(
+        request,
+        _("Tasdiqlash kodi yuborildi: %(where)s") % {"where": connection.code_delivery},
+    )
+    return True
+
+
+def _telegram_error_message(exc) -> str:
+    if isinstance(exc, FloodWaitError):
+        return _("Telegram juda ko'p urinish sababli vaqtincha cheklov qo'ydi — %(sec)s soniyadan keyin "
+                 "qayta urinib ko'ring.") % {"sec": exc.seconds}
+    if isinstance(exc, PhoneNumberInvalidError):
+        return _("Telefon raqami noto'g'ri. Xalqaro formatda kiriting, masalan: +998901234567")
+    if isinstance(exc, PhoneNumberBannedError):
+        return _("Bu raqam Telegram tomonidan bloklangan.")
+    if isinstance(exc, PhoneCodeInvalidError):
+        return _("Kod noto'g'ri. Qaytadan kiriting.")
+    if isinstance(exc, PhoneCodeExpiredError):
+        return _("Kodning muddati o'tgan — \"Kodni qayta yuborish\" yoki \"Raqamni o'zgartirish\" tugmasini bosing.")
+    return _("Xatolik: %(error)s") % {"error": exc}
+
+
 def _send_code_logic(request, connection):
     """Telefon raqamiga tasdiqlash kodi yuborish — super admin va biznes admin
     ikkalasi ham ishlatadigan umumiy mantiq (faqat keyingi redirect manzili
@@ -787,16 +869,25 @@ def _send_code_logic(request, connection):
         client.connect()
         sent = client.send_code_request(phone)
         connection.phone_number = phone
-        connection.session_string = client.session.save()
-        connection.phone_code_hash = sent.phone_code_hash
-        connection.status = "pending_code"
-        connection.save()
-        messages.success(
-            request,
-            _("Tasdiqlash kodi %(phone)s raqamiga (Telegram orqali) yuborildi.") % {"phone": phone},
-        )
+        _apply_sent_code(request, connection, client, sent)
     except Exception as exc:  # noqa: BLE001
-        messages.error(request, _("Xatolik: %(error)s") % {"error": exc})
+        messages.error(request, _telegram_error_message(exc))
+    finally:
+        client.disconnect()
+
+
+def _resend_code_logic(request, connection):
+    """Kodni keyingi kanal orqali (odatda SMS yoki qo'ng'iroq) qayta yuboradi."""
+    if connection.status != "pending_code":
+        messages.error(request, _("Avval telefon raqamni kiriting."))
+        return
+    client = _telethon_client(connection.session_string)
+    try:
+        client.connect()
+        sent = client(ResendCodeRequest(connection.phone_number, connection.phone_code_hash))
+        _apply_sent_code(request, connection, client, sent)
+    except Exception as exc:  # noqa: BLE001
+        messages.error(request, _telegram_error_message(exc))
     finally:
         client.disconnect()
 
@@ -825,7 +916,7 @@ def _verify_code_logic(request, connection):
 
         _complete_telegram_login(request, client, connection)
     except Exception as exc:  # noqa: BLE001
-        messages.error(request, _("Xatolik: %(error)s") % {"error": exc})
+        messages.error(request, _telegram_error_message(exc))
     finally:
         client.disconnect()
 
@@ -899,6 +990,13 @@ def _disconnect_telegram_account(connection):
 
 @superadmin_required
 @require_POST
+def telegram_resend_code(request):
+    _resend_code_logic(request, _main_workspace(request).telegram_connection)
+    return redirect("assistant:telegram_account")
+
+
+@superadmin_required
+@require_POST
 def telegram_cancel(request):
     _cancel_pending_login(request, _main_workspace(request).telegram_connection)
     return redirect("assistant:telegram_account")
@@ -947,6 +1045,13 @@ def telegram_verify_code_business(request):
 @require_POST
 def telegram_verify_password_business(request):
     _verify_password_logic(request, _workspace(request).telegram_connection)
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_resend_code_business(request):
+    _resend_code_logic(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
 
 

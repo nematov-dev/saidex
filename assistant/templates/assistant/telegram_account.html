@@ -29,13 +29,25 @@
     </div>
 
 {% elif connection.status == "pending_code" %}
-    <p class="text-muted">{% blocktrans with phone=connection.phone_number %}Tasdiqlash kodi <strong>{{ phone }}</strong> raqamiga
-       Telegram ilovasi orqali yuborildi (SMS emas, Telegram xabari sifatida keladi).{% endblocktrans %}</p>
+    <p class="text-muted mb-2">{% blocktrans with phone=connection.phone_number %}<strong>{{ phone }}</strong> raqami uchun tasdiqlash kodi yuborildi:{% endblocktrans %}</p>
+    <div class="alert alert-info py-2 small">
+        <i class="bi bi-info-circle"></i>
+        {{ connection.code_delivery|default:_("Telegram ilovasidagi rasmiy \"Telegram\" chatiga (SMS emas).") }}
+    </div>
     <form method="post" action="{% url 'assistant:telegram_verify_code' %}" class="d-flex gap-2">
         {% csrf_token %}
-        <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" required autofocus>
+        <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod (masalan 12345)' %}" inputmode="numeric" autocomplete="one-time-code" required autofocus>
         <button class="btn btn-dark">{% trans "Tasdiqlash" %}</button>
     </form>
+    <div class="form-text mt-2">{% trans "Kod kelmadimi? Telegram ilovasidagi chatlar ro'yxatida ko'k belgili rasmiy \"Telegram\" chatini tekshiring. Kodni hech kimga yubormang va boshqa chatga forward qilmang — aks holda Telegram uni bekor qiladi." %}</div>
+    {% if connection.code_next_delivery %}
+    <form method="post" action="{% url 'assistant:telegram_resend_code' %}" class="mt-3">
+        {% csrf_token %}
+        <button class="btn btn-outline-primary btn-sm w-100">
+            <i class="bi bi-arrow-repeat"></i> {% trans "Kodni qayta yuborish" %} — {{ connection.code_next_delivery }}
+        </button>
+    </form>
+    {% endif %}
 
     <form method="post" action="{% url 'assistant:telegram_cancel' %}" class="mt-3">
         {% csrf_token %}

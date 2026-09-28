@@ -477,6 +477,14 @@ class TelegramAccountConnection(models.Model):
     phone_number = models.CharField(max_length=32, blank=True, default="")
     session_string = models.TextField(blank=True, default="")
     phone_code_hash = models.CharField(max_length=255, blank=True, default="")
+    code_delivery = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="Tasdiqlash kodi qayerga yuborilgani (Telegram ilovasi, SMS, qo'ng'iroq...).",
+    )
+    code_next_delivery = models.CharField(
+        max_length=255, blank=True, default="",
+        help_text="\"Qayta yuborish\" bosilsa kod qayerga keladi — bo'sh bo'lsa qayta yuborib bo'lmaydi.",
+    )
     connected_username = models.CharField(max_length=255, blank=True, default="")
     connected_first_name = models.CharField(max_length=255, blank=True, default="")
     connected_user_id = models.BigIntegerField(
