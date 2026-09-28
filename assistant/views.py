@@ -23,8 +23,7 @@ from .models import (
     Document, Lead, ConversationLog, BotConfig, ProjectSubscription, TelegramAccountConnection,
     TelegramGroup, Workspace,
 )
-from telethon.sync import TelegramClient
-from telethon.sessions import StringSession
+import telethon.sync  # noqa: F401 - Telethon metodlarini view'larda sinxron chaqirish uchun
 from telethon.errors import (
     FloodWaitError, PhoneCodeExpiredError, PhoneCodeInvalidError, PhoneNumberBannedError,
     PhoneNumberInvalidError, SessionPasswordNeededError,
@@ -34,7 +33,9 @@ import base64
 from telethon.tl.functions.auth import ExportLoginTokenRequest, ImportLoginTokenRequest, ResendCodeRequest
 from telethon.tl.types import auth as tg_auth
 from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm, WorkspaceUserUpdateForm
+from .services.my_telegram import MyTelegramError, fetch_api_credentials, send_password
 from .services.phone import normalize_phone
+from .services.telegram_client import api_credentials, make_client
 from .services.rag import index_document
 
 # Super admin bo'limi (/saidex/) butunlay alohida — business admin (is_staff)
@@ -699,12 +700,12 @@ def superadmin_user_delete(request, pk):
 # super admin panelidagi sahifa asosiy (Saidex) ish maydonining akkauntini boshqaradi.
 # ---------------------------------------------------------------------------
 
-def _telethon_client(session_string: str = ""):
-    return TelegramClient(
-        StringSession(session_string),
-        int(settings.TELEGRAM_API_ID),
-        settings.TELEGRAM_API_HASH,
-    )
+def _telethon_client(connection, session_string: str = ""):
+    """Shu ulanishning o'z API kaliti bilan Telethon mijozi (telegram_client.make_client)."""
+    return make_client(connection, session_string)
+
+
+NO_API_KEY_MESSAGE = _("Avval 1-qadam: Telegram API kalitini oling (sahifadagi \"API kalitini olish\" bo'limi).")
 
 
 def _main_workspace(request) -> Workspace:
@@ -715,7 +716,7 @@ def _main_workspace(request) -> Workspace:
 @superadmin_required
 def telegram_account(request):
     connection = _main_workspace(request).telegram_connection
-    api_configured = bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH)
+    api_configured = bool(api_credentials(connection))
     return render(request, "assistant/telegram_account.html", {
         "connection": connection,
         "api_configured": api_configured,
@@ -852,11 +853,8 @@ def _send_code_logic(request, connection):
     raw_phone = request.POST.get("phone_number", "").strip()
     phone = normalize_phone(raw_phone) or raw_phone
 
-    if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
-        messages.error(
-            request,
-            _("Avval .env faylida TELEGRAM_API_ID va TELEGRAM_API_HASH to'ldiring (my.telegram.org)."),
-        )
+    if not api_credentials(connection):
+        messages.error(request, NO_API_KEY_MESSAGE)
         return
 
     if connection.is_connected:
@@ -879,7 +877,7 @@ def _send_code_logic(request, connection):
         messages.info(request, _("Kod allaqachon yuborildi — kiriting yoki 1 daqiqadan keyin qayta urinib ko'ring."))
         return
 
-    client = _telethon_client()
+    client = _telethon_client(connection)
     try:
         client.connect()
         sent = client.send_code_request(phone)
@@ -899,7 +897,7 @@ def _resend_code_logic(request, connection):
     if connection.status != "pending_code":
         messages.error(request, _("Avval telefon raqamni kiriting."))
         return
-    client = _telethon_client(connection.session_string)
+    client = _telethon_client(connection, connection.session_string)
     try:
         client.connect()
         sent = client(ResendCodeRequest(connection.phone_number, connection.phone_code_hash))
@@ -920,7 +918,7 @@ def _verify_code_logic(request, connection):
         messages.error(request, _("Avval telefon raqamni kiriting."))
         return
 
-    client = _telethon_client(connection.session_string)
+    client = _telethon_client(connection, connection.session_string)
     try:
         client.connect()
         try:
@@ -947,7 +945,7 @@ def _verify_password_logic(request, connection):
         messages.error(request, _("Kutilmagan holat, qaytadan urinib ko'ring."))
         return
 
-    client = _telethon_client(connection.session_string)
+    client = _telethon_client(connection, connection.session_string)
     try:
         client.connect()
         client.sign_in(password=password)
@@ -985,20 +983,17 @@ def telegram_verify_password(request):
 def _qr_start_logic(request, connection):
     """QR-kod orqali ulashni boshlaydi: Telegram'dan login token olinadi, sessiya saqlanadi.
     Kod (SMS/ilova) kerak emas — foydalanuvchi QR'ni telefonidagi Telegram bilan skanerlaydi."""
-    if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
-        messages.error(
-            request,
-            _("Avval .env faylida TELEGRAM_API_ID va TELEGRAM_API_HASH to'ldiring (my.telegram.org)."),
-        )
+    if not api_credentials(connection):
+        messages.error(request, NO_API_KEY_MESSAGE)
         return
     if connection.is_connected:
         messages.error(request, _("Avval joriy akkauntni uzing, keyin yangisini ulang."))
         return
 
-    client = _telethon_client()
+    client = _telethon_client(connection)
     try:
         client.connect()
-        client(ExportLoginTokenRequest(int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH, []))
+        client(ExportLoginTokenRequest(*api_credentials(connection), []))
         _reset_connection(connection)
         connection.session_string = client.session.save()
         connection.status = "pending_qr"
@@ -1016,8 +1011,11 @@ def _qr_poll_logic(request, connection) -> dict:
     if connection.status != "pending_qr":
         return {"status": connection.status}
 
-    api_id, api_hash = int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH
-    client = _telethon_client(connection.session_string)
+    credentials = api_credentials(connection)
+    if not credentials:
+        return {"status": "error", "message": str(NO_API_KEY_MESSAGE)}
+    api_id, api_hash = credentials
+    client = _telethon_client(connection, connection.session_string)
     try:
         client.connect()
         try:
@@ -1063,7 +1061,7 @@ def _disconnect_telegram_account(connection):
 
     if connection.session_string:
         try:
-            client = _telethon_client(connection.session_string)
+            client = _telethon_client(connection, connection.session_string)
             client.connect()
             client.log_out()
             client.disconnect()
@@ -1117,7 +1115,8 @@ def telegram_disconnect(request):
 @login_required
 def telegram_status(request):
     connection = _workspace(request).telegram_connection
-    api_configured = bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH)
+    connection.api_is_own = bool(connection.api_id and connection.api_hash)
+    api_configured = bool(api_credentials(connection))
     return render(request, "assistant/telegram_status.html", {
         "connection": connection,
         "api_configured": api_configured,
@@ -1149,6 +1148,104 @@ def telegram_verify_password_business(request):
 @require_POST
 def telegram_resend_code_business(request):
     _resend_code_logic(request, _workspace(request).telegram_connection)
+    return redirect("assistant:telegram_status")
+
+
+API_CODE_COOLDOWN = 60  # soniya
+
+
+@login_required
+@require_POST
+def telegram_api_send_code(request):
+    """1-qadam: my.telegram.org tasdiqlash kodini mijozning Telegram ilovasiga yuborish."""
+    connection = _workspace(request).telegram_connection
+    raw_phone = request.POST.get("phone_number", "").strip()
+    phone = normalize_phone(raw_phone)
+    if not phone:
+        messages.error(request, _("Telefon raqamini to'g'ri kiriting, masalan: +998901234567"))
+        return redirect("assistant:telegram_status")
+
+    recently = timezone.now() - timedelta(seconds=API_CODE_COOLDOWN)
+    if connection.api_setup_phone == phone and connection.api_setup_sent_at and connection.api_setup_sent_at > recently:
+        messages.info(request, _("Kod allaqachon yuborildi — kiriting yoki 1 daqiqadan keyin qayta urinib ko'ring."))
+        return redirect("assistant:telegram_status")
+
+    try:
+        random_hash = send_password(phone)
+    except MyTelegramError as exc:
+        logger.warning("my.telegram.org send_password xatoligi (%s): %s", phone, exc)
+        messages.error(request, str(exc))
+        return redirect("assistant:telegram_status")
+
+    connection.api_setup_phone = phone
+    connection.api_setup_random_hash = random_hash
+    connection.api_setup_sent_at = timezone.now()
+    connection.save(update_fields=["api_setup_phone", "api_setup_random_hash", "api_setup_sent_at", "updated_at"])
+    messages.success(request, _("Kod Telegram ilovangizdagi rasmiy \"Telegram\" chatiga yuborildi."))
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_api_verify(request):
+    """1-qadam davomi: kod bilan my.telegram.org'ga kirib, api_id / api_hash ni olish va saqlash."""
+    connection = _workspace(request).telegram_connection
+    code = request.POST.get("code", "").strip()
+    if not connection.api_setup_random_hash:
+        messages.error(request, _("Avval telefon raqamini kiriting."))
+        return redirect("assistant:telegram_status")
+    if not code:
+        messages.error(request, _("Telegram'ga kelgan kodni kiriting."))
+        return redirect("assistant:telegram_status")
+
+    try:
+        api_id, api_hash = fetch_api_credentials(connection.api_setup_phone, connection.api_setup_random_hash, code)
+    except MyTelegramError as exc:
+        logger.warning("my.telegram.org login xatoligi (%s): %s", connection.api_setup_phone, exc)
+        messages.error(request, str(exc))
+        return redirect("assistant:telegram_status")
+
+    connection.api_id = api_id
+    connection.api_hash = api_hash
+    connection.api_setup_random_hash = ""
+    connection.api_setup_sent_at = None
+    connection.save(update_fields=["api_id", "api_hash", "api_setup_random_hash", "api_setup_sent_at", "updated_at"])
+    messages.success(request, _("API kaliti olindi. Endi 2-qadam: akkauntingizni ulang."))
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_api_manual(request):
+    """API kalitini qo'lda kiritish (avtomatik olish ishlamasa)."""
+    connection = _workspace(request).telegram_connection
+    api_id = request.POST.get("api_id", "").strip()
+    api_hash = request.POST.get("api_hash", "").strip().lower()
+    if not api_id.isdigit() or len(api_hash) != 32 or any(ch not in "0123456789abcdef" for ch in api_hash):
+        messages.error(request, _("api_id faqat raqamlardan, api_hash esa 32 ta belgidan iborat bo'lishi kerak."))
+        return redirect("assistant:telegram_status")
+    connection.api_id = int(api_id)
+    connection.api_hash = api_hash
+    connection.save(update_fields=["api_id", "api_hash", "updated_at"])
+    messages.success(request, _("API kaliti saqlandi. Endi 2-qadam: akkauntingizni ulang."))
+    return redirect("assistant:telegram_status")
+
+
+@login_required
+@require_POST
+def telegram_api_reset(request):
+    """API kalitini o'chirish / almashtirish — faqat akkaunt ulanmagan paytda."""
+    connection = _workspace(request).telegram_connection
+    if connection.status != "disconnected":
+        messages.error(request, _("Avval akkauntni uzing yoki ulashni bekor qiling."))
+        return redirect("assistant:telegram_status")
+    connection.api_id = None
+    connection.api_hash = ""
+    connection.api_setup_phone = ""
+    connection.api_setup_random_hash = ""
+    connection.api_setup_sent_at = None
+    connection.save()
+    messages.info(request, _("API kaliti o'chirildi."))
     return redirect("assistant:telegram_status")
 
 

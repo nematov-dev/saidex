@@ -1,0 +1,42 @@
+{% load i18n %}
+<div class="d-flex align-items-center gap-2 mb-2">
+    <span class="badge rounded-pill bg-primary">1</span>
+    <h5 class="m-0">{% trans "Telegram API kalitini olish" %}</h5>
+</div>
+<p class="text-muted small">
+    {% blocktrans %}Akkauntingiz xavfsiz va barqaror ishlashi uchun u sizning shaxsiy Telegram API kalitingiz bilan ulanadi.
+    Kalit rasmiy my.telegram.org saytidan avtomatik olinadi — faqat raqamingizni va Telegram'ga keladigan kodni kiriting.{% endblocktrans %}
+</p>
+
+{% if connection.api_setup_random_hash %}
+    <p class="mb-2">{% blocktrans with phone=connection.api_setup_phone %}<strong>{{ phone }}</strong> raqamiga kod yuborildi. Telegram ilovasidagi rasmiy "Telegram" chatini oching va kodni kiriting (kod harf va raqamlardan iborat bo'lishi mumkin):{% endblocktrans %}</p>
+    <form method="post" action="{% url 'assistant:telegram_api_verify' %}" class="d-flex gap-2" data-submit-once>
+        {% csrf_token %}
+        <input type="text" name="code" class="form-control" placeholder="{% trans 'Kod' %}" autocomplete="one-time-code" required autofocus>
+        <button class="btn btn-dark text-nowrap">{% trans "Kalitni olish" %}</button>
+    </form>
+    <div class="form-text mt-2">{% trans "Kod kelmadimi yoki raqam noto'g'rimi? Pastdan raqamni qaytadan kiriting." %}</div>
+    <hr>
+{% endif %}
+
+<form method="post" action="{% url 'assistant:telegram_api_send_code' %}" class="d-flex gap-2" data-submit-once>
+    {% csrf_token %}
+    <input type="text" name="phone_number" class="form-control" placeholder="+998901234567"
+           value="{{ connection.api_setup_phone|default:request.user.workspace.phone }}" inputmode="tel" required>
+    <button class="btn btn-primary text-nowrap">{% if connection.api_setup_random_hash %}{% trans "Qayta yuborish" %}{% else %}{% trans "Kod olish" %}{% endif %}</button>
+</form>
+<div class="form-text mt-2">{% trans "Ulamoqchi bo'lgan Telegram akkauntingiz raqamini kiriting." %}</div>
+
+<details class="mt-3">
+    <summary class="small text-muted">{% trans "Kalitni qo'lda kiritish" %}</summary>
+    <p class="small text-muted mt-2 mb-2">
+        {% trans "my.telegram.org/apps saytiga kiring, ilova yarating va App api_id hamda App api_hash qiymatlarini shu yerga kiriting." %}
+        <a href="https://my.telegram.org/apps" target="_blank" rel="noopener">my.telegram.org/apps</a>
+    </p>
+    <form method="post" action="{% url 'assistant:telegram_api_manual' %}" class="row g-2" data-submit-once>
+        {% csrf_token %}
+        <div class="col-4"><input type="text" name="api_id" class="form-control" placeholder="api_id" inputmode="numeric" required></div>
+        <div class="col-8"><input type="text" name="api_hash" class="form-control" placeholder="api_hash" required></div>
+        <div class="col-12"><button class="btn btn-outline-dark btn-sm w-100">{% trans "Saqlash" %}</button></div>
+    </form>
+</details>

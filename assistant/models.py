@@ -478,6 +478,13 @@ class TelegramAccountConnection(models.Model):
     phone_number = models.CharField(max_length=32, blank=True, default="")
     session_string = models.TextField(blank=True, default="")
     phone_code_hash = models.CharField(max_length=255, blank=True, default="")
+    # Foydalanuvchining o'z Telegram API kaliti (my.telegram.org) — har bir akkaunt shu kalit bilan ulanadi.
+    api_id = models.PositiveIntegerField(null=True, blank=True)
+    api_hash = models.CharField(max_length=64, blank=True, default="")
+    # my.telegram.org orqali kalit olish jarayoni (kod kutilayotgan holat).
+    api_setup_phone = models.CharField(max_length=32, blank=True, default="")
+    api_setup_random_hash = models.CharField(max_length=255, blank=True, default="")
+    api_setup_sent_at = models.DateTimeField(null=True, blank=True)
     code_delivery = models.CharField(
         max_length=255, blank=True, default="",
         help_text="Tasdiqlash kodi qayerga yuborilgani (Telegram ilovasi, SMS, qo'ng'iroq...).",

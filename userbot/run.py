@@ -28,6 +28,7 @@ from django.conf import settings  # noqa: E402
 from telethon import TelegramClient  # noqa: E402
 from telethon.sessions import StringSession  # noqa: E402
 
+from assistant.services.telegram_client import DEVICE_KWARGS  # noqa: E402
 from userbot.handlers import register_handlers  # noqa: E402
 
 logger = logging.getLogger("userbot")
@@ -38,13 +39,24 @@ RETRY_AFTER = 300
 
 
 @sync_to_async
-def get_connected_sessions() -> dict[int, tuple[str, str]]:
-    """{workspace_id: (session_string, phone_number)} — hozir ulangan barcha akkauntlar."""
+def get_connected_sessions() -> dict[int, tuple]:
+    """{workspace_id: (session_string, phone_number, api_id, api_hash)} — hozir ulangan barcha akkauntlar.
+    Har bir akkaunt o'zining API kaliti bilan ishlaydi (kaliti yo'qlari o'tkazib yuboriladi)."""
     from assistant.models import TelegramAccountConnection
-    return {
-        conn.workspace_id: (conn.session_string, conn.phone_number)
-        for conn in TelegramAccountConnection.objects.filter(status="connected").exclude(session_string="")
-    }
+    from assistant.services.telegram_client import api_credentials
+
+    sessions = {}
+    connections = (
+        TelegramAccountConnection.objects.filter(status="connected").exclude(session_string="")
+        .select_related("workspace")
+    )
+    for conn in connections:
+        credentials = api_credentials(conn)
+        if credentials is None:
+            logger.warning("Ish maydoni #%s: API kaliti yo'q — akkaunt ishga tushirilmadi.", conn.workspace_id)
+            continue
+        sessions[conn.workspace_id] = (conn.session_string, conn.phone_number, *credentials)
+    return sessions
 
 
 @sync_to_async
@@ -60,15 +72,11 @@ def remember_telegram_user_id(workspace_id: int, telegram_user_id: int):
 class AccountRunner:
     """Bitta ish maydonining Telegram akkauntini alohida asyncio vazifasi sifatida ishlatadi."""
 
-    def __init__(self, workspace_id: int, session_string: str, phone: str):
+    def __init__(self, workspace_id: int, session_string: str, phone: str, api_id: int, api_hash: str):
         self.workspace_id = workspace_id
         self.session_string = session_string
         self.phone = phone
-        self.client = TelegramClient(
-            StringSession(session_string),
-            int(settings.TELEGRAM_API_ID),
-            settings.TELEGRAM_API_HASH,
-        )
+        self.client = TelegramClient(StringSession(session_string), api_id, api_hash, **DEVICE_KWARGS)
         register_handlers(self.client, workspace_id)
         self.stopped_at = None
         self.task = asyncio.create_task(self._run())
@@ -109,11 +117,6 @@ class AccountRunner:
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
-        raise RuntimeError(
-            "TELEGRAM_API_ID / TELEGRAM_API_HASH .env faylida to'liq emas. "
-            "https://my.telegram.org/apps dan oling."
-        )
 
     runners: dict[int, AccountRunner] = {}
     print(f"[{settings.BUSINESS_NAME}] Userbot menejeri ishga tushdi (har {SYNC_INTERVAL} soniyada tekshiradi).", flush=True)
@@ -132,9 +135,9 @@ async def main():
                     await runner.stop()
                     del runners[workspace_id]
 
-            for workspace_id, (session_string, phone) in sessions.items():
+            for workspace_id, (session_string, phone, api_id, api_hash) in sessions.items():
                 if workspace_id not in runners:
-                    runners[workspace_id] = AccountRunner(workspace_id, session_string, phone)
+                    runners[workspace_id] = AccountRunner(workspace_id, session_string, phone, api_id, api_hash)
 
         await asyncio.sleep(SYNC_INTERVAL)
 
