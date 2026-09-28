@@ -4,7 +4,7 @@ import logging
 from django.conf import settings
 from pgvector.django import CosineDistance
 
-from ..models import Document, DocumentChunk, BotConfig, ProjectSubscription
+from ..models import Document, DocumentChunk, BotConfig, Workspace
 from .document_loader import extract_text
 from .chunking import split_text
 from .embeddings import embed_texts, embed_query
@@ -106,13 +106,14 @@ def index_document(document: Document) -> None:
     document.save()
 
 
-def retrieve_context(question: str, top_k: int | None = None) -> str:
-    """Savolga eng yaqin bo'laklarni pgvector cosine distance orqali topadi."""
+def retrieve_context(workspace: Workspace, question: str, top_k: int | None = None) -> str:
+    """Savolga eng yaqin bo'laklarni pgvector cosine distance orqali topadi —
+    FAQAT shu ish maydoniga (foydalanuvchiga) tegishli hujjatlar ichidan."""
     top_k = top_k or settings.RAG_TOP_K
     query_vector = embed_query(question)
 
     chunks = (
-        DocumentChunk.objects.filter(document__status="ready")
+        DocumentChunk.objects.filter(document__workspace=workspace, document__status="ready")
         .annotate(distance=CosineDistance("embedding", query_vector))
         .order_by("distance")[:top_k]
     )
@@ -139,7 +140,9 @@ def detect_buying_intent(question: str, config: BotConfig) -> bool:
     return any(_normalize_uz(keyword) in t for keyword in config.lead_trigger_list)
 
 
-def answer_question(question: str, channel: str = "userbot", history: list[dict] | None = None):
+def answer_question(
+    workspace: Workspace, question: str, channel: str = "userbot", history: list[dict] | None = None,
+):
     """
     Qaytaradi: (javob, input_token, output_token, ai_javob_berdimi: bool, ariza_kerakmi: bool)
 
@@ -159,7 +162,7 @@ def answer_question(question: str, channel: str = "userbot", history: list[dict]
     baribir saqlanadi — bu AI'dan mustaqil, kalit so'zga asoslangan mantiq,
     shuning uchun ariza yig'ish oqimi AI ishlamay qolganda ham davom etadi.
     """
-    subscription = ProjectSubscription.get_solo()
+    subscription = workspace.subscription
     if not subscription.is_service_active:
         # MUHIM: obuna faol emasligi haqida foydalanuvchiga HECH QANDAY xabar
         # yuborilmaydi (AI butunlay ishlamay qolganda ham qo'llaniladigan
@@ -167,7 +170,7 @@ def answer_question(question: str, channel: str = "userbot", history: list[dict]
         # to'xtatilgan" kabi ichki holatni oshkor qilmaydi.
         return (None, 0, 0, False, False)
 
-    config = BotConfig.get_solo()
+    config = workspace.config
     if not config.ai_enabled:
         return config.fallback_message, 0, 0, False, False
 
@@ -187,7 +190,7 @@ def answer_question(question: str, channel: str = "userbot", history: list[dict]
     # uchun, va bu yerda ham generate_answer bilan bir xil try/except ostiga
     # olingani uchun, oxir-oqibat baribir "sukut" bilan yakunlanadi.
     try:
-        context = retrieve_context(question)
+        context = retrieve_context(workspace, question)
         if not context.strip():
             return config.fallback_message, 0, 0, False, wants_lead
 

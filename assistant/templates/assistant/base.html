@@ -123,8 +123,17 @@
                class="{% if request.resolver_match.url_name == 'prompt_settings' %}active{% endif %}">
                 <i class="bi bi-sliders"></i> <span class="nav-label">{% trans "AI sozlamalari" %}</span>
             </a>
+            <a href="{% url 'assistant:telegram_status' %}"
+               class="{% if request.resolver_match.url_name == 'telegram_status' %}active{% endif %}">
+                <i class="bi bi-telegram"></i> <span class="nav-label">{% trans "Telegram akkaunt" %}</span>
+            </a>
+            <a href="{% url 'assistant:subscription' %}"
+               class="{% if request.resolver_match.url_name == 'subscription' %}active{% endif %}">
+                <i class="bi bi-gem"></i> <span class="nav-label">{% trans "Obuna" %}</span>
+            </a>
         </nav>
 
+        {% if request.user.is_superuser %}
         <div class="nav-section-label">Saidex</div>
         <nav class="nav flex-column gap-1">
             <a href="{% url 'assistant:saidex_tariffs' %}"
@@ -143,7 +152,11 @@
                class="{% if request.resolver_match.url_name == 'saidex_settings' %}active{% endif %}">
                 <i class="bi bi-globe"></i> <span class="nav-label">{% trans "Sayt sozlamalari" %}</span>
             </a>
+            <a href="{% url 'assistant:superadmin_users' %}">
+                <i class="bi bi-shield-lock"></i> <span class="nav-label">{% trans "Super admin" %}</span>
+            </a>
         </nav>
+        {% endif %}
     </div>
 
     <div class="flex-grow-1 d-flex flex-column">
@@ -228,17 +241,34 @@
         </div>
 
         <div class="content-area p-4 flex-grow-1">
-            {% if not subscription.is_service_active %}
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    {% trans "Obuna muddati tugadi." %}
-                    {% trans "Uzaytirish uchun adminlarga bog'laning." %}
-                </div>
-            {% elif subscription.days_left <= 5 %}
-                <div class="alert alert-warning">
-                    <i class="bi bi-clock"></i>
-                    {% blocktrans with days_left=subscription.days_left %}Obuna muddati {{ days_left }} kundan so'ng tugaydi.{% endblocktrans %}
-                </div>
+            {% if subscription and request.resolver_match.url_name != 'subscription' %}
+                {% if not subscription.is_active %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {% trans "Hisobingiz to'xtatilgan — AI javob bermayapti." %}
+                        <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="alert-link">{% trans "Adminga yozish" %}</a>
+                    </div>
+                {% elif subscription.free_limit_reached %}
+                    <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <span>
+                            <i class="bi bi-exclamation-triangle"></i>
+                            {% if subscription.plan == 'pro' %}
+                                {% trans "Pro obuna muddati tugadi — AI javob bermayapti." %}
+                            {% else %}
+                                {% blocktrans with limit=subscription.free_question_limit %}Bepul {{ limit }} ta savol-javob tugadi — AI javob bermayapti.{% endblocktrans %}
+                            {% endif %}
+                        </span>
+                        <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="btn btn-sm btn-light">
+                            <i class="bi bi-telegram"></i> {% trans "Pro olish" %}
+                        </a>
+                    </div>
+                {% elif subscription.is_pro and subscription.days_left <= 5 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-clock"></i>
+                        {% blocktrans with days_left=subscription.days_left %}Pro obuna muddati {{ days_left }} kundan so'ng tugaydi.{% endblocktrans %}
+                        <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="alert-link">{% trans "Uzaytirish" %}</a>
+                    </div>
+                {% endif %}
             {% endif %}
             {% if messages %}
                 {% for message in messages %}

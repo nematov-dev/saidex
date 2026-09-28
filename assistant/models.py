@@ -7,9 +7,87 @@ from pgvector.django import VectorField
 from django.conf import settings
 
 
+# Yangi ro'yxatdan o'tgan foydalanuvchi (biznes) uchun boshlang'ich prompt —
+# asosiy (Saidex) promptidan farqli, unda Saidex xizmatini sotish haqidagi
+# qoidalar (narx, AI operator taklifi) yo'q, faqat umumiy operator qoidalari.
+GENERIC_SYSTEM_PROMPT = (
+    "Siz ushbu biznesning OPERATORISIZ — hech qachon o'zingizni AI, bot, dastur yoki "
+    "sun'iy intellekt deb tanishtirmaysiz. Kimligingiz so'ralsa, o'zingizni shu biznesning "
+    "xodimi/operatori sifatida tanishtiring.\n\n"
+    "Muloqotni doim samimiy, professional va qisqa tarzda, xuddi jonli odam yozayotgandek "
+    "olib borasiz.\n\n"
+    "Salomlashish: Foydalanuvchi salom bersa yoki suhbatni boshlasa, iliq va qisqa "
+    "salomlashib, qanday yordam bera olishingizni so'rang.\n\n"
+    "Qoidalar:\n"
+    "1. Faqat sizga berilgan ma'lumotlar (hujjatlar) asosida javob bering — "
+    "shu ma'lumotlar doirasidan chiqmang va hech narsani o'zingizdan to'qib chiqarmang.\n"
+    "2. Agar savolga javob ma'lumotlar orasida topilmasa, buni ochiq ayting va "
+    "operatorga murojaat qilishni taklif qiling.\n"
+    "3. Javoblaringiz aniq, tushunarli va imkon qadar qisqa bo'lsin.\n"
+    "4. Foydalanuvchi narx, buyurtma yoki xarid haqida qiziqish bildirsa, qisqa va iliq "
+    "tasdiqlovchi javob bering va ism hamda telefon raqamini qoldirishni so'rang. "
+    "\"Arizangiz qabul qilindi\" deb o'zingiz aytmang.\n"
+    "5. Foydalanuvchi qaysi tilda yozsa (o'zbek, rus, ingliz yoki boshqa til), siz ham "
+    "AYNAN o'sha tilda javob bering.\n"
+    "6. Javoblaringiz bir xil andoza bo'lib qolmasin — har safar tabiiy va turlicha javob bering."
+)
+
+
+class Workspace(models.Model):
+    """
+    Bitta foydalanuvchi (biznes) ning ish maydoni — hujjatlar, arizalar,
+    suhbatlar, AI sozlamalari, Telegram akkaunt va obuna shunga bog'lanadi.
+    Har bir foydalanuvchi panelda faqat o'z Workspace'iga tegishli
+    ma'lumotlarni ko'radi.
+    """
+
+    owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name="workspace")
+    name = models.CharField(max_length=255, blank=True, default="")
+    is_main = models.BooleanField(
+        default=False,
+        help_text="Saidex'ning o'z ish maydoni — landing page demo-chati va aloqa formasi shu "
+                  "yerning hujjatlari/arizalaridan foydalanadi.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = _("Ish maydoni")
+        verbose_name_plural = _("Ish maydonlari")
+
+    def __str__(self):
+        return self.name or self.owner.get_username()
+
+    @classmethod
+    def for_user(cls, user):
+        workspace, _created = cls.objects.get_or_create(
+            owner=user, defaults={"name": user.get_username()},
+        )
+        return workspace
+
+    @classmethod
+    def main(cls):
+        return cls.objects.filter(is_main=True).first()
+
+    @property
+    def config(self):
+        return BotConfig.for_workspace(self)
+
+    @property
+    def subscription(self):
+        return ProjectSubscription.for_workspace(self)
+
+    @property
+    def telegram_connection(self):
+        return TelegramAccountConnection.for_workspace(self)
+
+
 class BotConfig(models.Model):
     """Har bir biznes uchun bitta yozuv — AI sozlamalari (biznes admin boshqaradi)."""
 
+    workspace = models.OneToOneField(
+        Workspace, on_delete=models.CASCADE, related_name="bot_config",
+    )
     business_name = models.CharField(max_length=255, default="AI Assistant")
     system_prompt = models.TextField(
         default="Siz ushbu biznesning OPERATORISIZ — hech qachon o'zingizni AI, bot, dastur yoki "
@@ -100,8 +178,11 @@ class BotConfig(models.Model):
         return f"{self.business_name} sozlamalari"
 
     @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def for_workspace(cls, workspace):
+        defaults = {"business_name": workspace.name or "AI Assistant"}
+        if not workspace.is_main:
+            defaults["system_prompt"] = GENERIC_SYSTEM_PROMPT
+        obj, _ = cls.objects.get_or_create(workspace=workspace, defaults=defaults)
         return obj
 
     @property
@@ -119,12 +200,31 @@ class BotConfig(models.Model):
 
 class ProjectSubscription(models.Model):
     """
-    Loyihaning obuna holati — FAQAT super admin (siz) boshqaradi.
+    Ish maydonining (foydalanuvchining) obuna holati — FAQAT super admin (siz) boshqaradi.
     Bu BotConfig.ai_enabled'dan mustaqil, umumiy "asosiy kalit" hisoblanadi:
     agar is_active=False bo'lsa, Telegram akkaunt ishlamaydi — mijoz ai_enabled'ni
     o'ziga yoqib qo'yolmaydi.
+
+    Tariflar:
+      - free: jami free_question_limit ta (standart 20) AI javobi bepul;
+      - pro: subscription_end sanasigacha cheksiz. Pro muddati tugasa, obuna
+        avtomatik "free" qoidalariga qaytadi (bepul limit ishlatilgan bo'lsa, AI to'xtaydi).
+    Pro'ga o'tkazish Telegram orqali murojaatdan keyin super admin panelida qo'lda qilinadi.
     """
 
+    PLAN_CHOICES = [
+        ("free", _("Bepul")),
+        ("pro", _("Pro")),
+    ]
+
+    workspace = models.OneToOneField(
+        Workspace, on_delete=models.CASCADE, related_name="project_subscription",
+    )
+    plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default="free")
+    free_question_limit = models.PositiveIntegerField(
+        default=settings.FREE_PLAN_QUESTION_LIMIT,
+        help_text="Bepul tarifda jami nechta savolga AI javob beradi.",
+    )
     is_active = models.BooleanField(default=True, help_text="Loyihani butunlay yoqish/o'chirish (super admin).")
     subscription_start = models.DateField(default=timezone.now)
     subscription_end = models.DateField(default=timezone.now)
@@ -145,10 +245,8 @@ class ProjectSubscription(models.Model):
         return f"Obuna: {self.subscription_end}"
 
     @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1, defaults={
-            "subscription_end": timezone.now().date() + timedelta(days=30)
-        })
+    def for_workspace(cls, workspace):
+        obj, _ = cls.objects.get_or_create(workspace=workspace)
         return obj
 
     @property
@@ -156,26 +254,51 @@ class ProjectSubscription(models.Model):
         return (self.subscription_end - timezone.now().date()).days
 
     @property
+    def is_pro(self) -> bool:
+        """Pro tarif hozir amalda — plan=pro va muddati o'tmagan."""
+        return self.plan == "pro" and self.days_left >= 0
+
+    @property
+    def questions_used(self) -> int:
+        """Bepul limitga hisoblanadigan AI javoblari soni (jami)."""
+        return ConversationLog.objects.filter(workspace_id=self.workspace_id, answered_by_ai=True).count()
+
+    @property
+    def questions_left(self) -> int:
+        return max(self.free_question_limit - self.questions_used, 0)
+
+    @property
+    def free_limit_reached(self) -> bool:
+        return not self.is_pro and self.questions_left <= 0
+
+    @property
     def status(self) -> str:
         if not self.is_active:
             return "to'xtatilgan"
-        days = self.days_left
-        if days < 0:
+        if self.is_pro:
+            return "tez orada tugaydi" if self.days_left <= 5 else "faol"
+        if self.plan == "pro":
             return "muddati tugagan"
-        if days <= 5:
-            return "tez orada tugaydi"
-        return "faol"
+        return "bepul limit tugagan" if self.free_limit_reached else "bepul"
 
     @property
     def is_service_active(self) -> bool:
-        """Bot/userbot ishlashi kerakmi — obuna faol va muddati o'tmagan bo'lsa."""
-        return self.is_active and self.days_left >= 0
+        """Bot/userbot ishlashi kerakmi — obuna yoqilgan va (Pro amalda yoki bepul limit qolgan)."""
+        return self.is_active and (self.is_pro or self.questions_left > 0)
 
     def extend(self, days: int):
-        base = self.subscription_end if self.subscription_end >= timezone.now().date() else timezone.now().date()
+        """Pro obunani berilgan kunga uzaytiradi (kerak bo'lsa bepuldan Pro'ga o'tkazadi)."""
+        today = timezone.now().date()
+        base = self.subscription_end if self.plan == "pro" and self.subscription_end >= today else today
         self.subscription_end = base + timedelta(days=days)
+        self.plan = "pro"
         self.is_active = True
-        self.save(update_fields=["subscription_end", "is_active"])
+        self.save(update_fields=["subscription_end", "plan", "is_active"])
+
+    def set_free(self):
+        self.plan = "free"
+        self.subscription_end = timezone.now().date()
+        self.save(update_fields=["plan", "subscription_end"])
 
 
 class Document(models.Model):
@@ -188,6 +311,7 @@ class Document(models.Model):
         ("error", _("Xatolik")),
     ]
 
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="documents")
     title = models.CharField(max_length=255)
     file = models.FileField(upload_to="documents/%Y/%m/")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
@@ -247,6 +371,7 @@ class Lead(models.Model):
         ("will_buy_later", _("Keyinroq oladi")),
     ]
 
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="leads")
     channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default="bot")
     telegram_user_id = models.BigIntegerField()
     telegram_username = models.CharField(max_length=255, blank=True, default="")
@@ -279,7 +404,8 @@ class PendingLead(models.Model):
 
     STEP_CHOICES = [("name", _("Ism kutilmoqda")), ("phone", _("Telefon kutilmoqda"))]
 
-    telegram_user_id = models.BigIntegerField(unique=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="pending_leads")
+    telegram_user_id = models.BigIntegerField()
     telegram_username = models.CharField(max_length=255, blank=True, default="")
     original_message = models.TextField()
     step = models.CharField(max_length=10, choices=STEP_CHOICES, default="name")
@@ -287,6 +413,7 @@ class PendingLead(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        unique_together = [("workspace", "telegram_user_id")]
         verbose_name = _("Kutilayotgan ariza")
         verbose_name_plural = _("Kutilayotgan arizalar")
 
@@ -301,6 +428,7 @@ class ConversationLog(models.Model):
         ("website", _("Veb-sayt")),
     ]
 
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="conversations")
     channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default="bot")
     telegram_user_id = models.BigIntegerField()
     chat_id = models.BigIntegerField(
@@ -327,8 +455,12 @@ class ConversationLog(models.Model):
 class TelegramAccountConnection(models.Model):
     """
     Admin panel orqali ulanadigan Telegram AKKAUNT (Telethon userbot) holati.
-    Bir vaqtning o'zida faqat bitta akkaunt ulanishi mumkin (singleton).
+    Har bir ish maydoni (foydalanuvchi) o'zining bitta akkauntini ulaydi.
     """
+
+    workspace = models.OneToOneField(
+        Workspace, on_delete=models.CASCADE, related_name="telegram_account",
+    )
 
     STATUS_CHOICES = [
         ("disconnected", _("Ulanmagan")),
@@ -354,8 +486,8 @@ class TelegramAccountConnection(models.Model):
         return f"Telegram akkaunt: {self.get_status_display()}"
 
     @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def for_workspace(cls, workspace):
+        obj, _ = cls.objects.get_or_create(workspace=workspace)
         return obj
 
     @property
@@ -381,7 +513,8 @@ class TelegramGroup(models.Model):
         ("admins", _("Faqat guruh adminlariga")),
     ]
 
-    chat_id = models.BigIntegerField(unique=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="telegram_groups")
+    chat_id = models.BigIntegerField()
     title = models.CharField(max_length=255, blank=True, default="")
     is_ai_enabled = models.BooleanField(
         default=False,
@@ -394,6 +527,7 @@ class TelegramGroup(models.Model):
 
     class Meta:
         ordering = ["-last_seen_at"]
+        unique_together = [("workspace", "chat_id")]
         verbose_name = _("Telegram guruh")
         verbose_name_plural = _("Telegram guruhlar")
 

@@ -100,7 +100,7 @@ body.landing {
 .lang-menu button:hover { background: rgba(255,255,255,.06); }
 
 /* ---- Mobil menyu tugmasi (hamburger) — faqat tor ekranlarda ko'rinadi ---- */
-.landing-nav-cta { display: none; }
+.landing-nav-cta, .landing-nav-auth { display: none; }
 .landing-menu-btn {
     display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
     width: 40px; height: 40px; background: transparent; border: 1px solid var(--border);
@@ -164,6 +164,18 @@ body.landing {
 .tariff-card ul { list-style: none; padding: 0; margin: 0 0 1.5rem; flex-grow: 1; }
 .tariff-card li { display: flex; gap: .5rem; align-items: flex-start; padding: .4rem 0; color: var(--text-muted); font-size: .92rem; }
 .tariff-card li::before { content: "✓"; color: var(--success); font-weight: 800; }
+.tariff-card .tariff-note { margin: .75rem 0 0; font-size: .8rem; color: var(--text-muted); text-align: center; }
+
+/* ---- Ro'yxatdan o'tish sahifasi ---- */
+.auth-section { padding: 4rem 0; }
+.auth-card { max-width: 440px; margin: 0 auto; }
+.auth-card h1 { font-size: 1.6rem; margin: 0 0 .35rem; }
+.auth-card .auth-subtitle { color: var(--text-muted); margin: 0 0 1.5rem; font-size: .92rem; }
+.auth-card .field { margin-bottom: 1rem; }
+.auth-card label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .35rem; }
+.auth-card .field-error { color: #f87171; font-size: .8rem; margin-top: .3rem; }
+.auth-card .auth-footer { text-align: center; font-size: .88rem; color: var(--text-muted); margin: 1.25rem 0 0; }
+.auth-card .auth-footer a { color: var(--accent); font-weight: 600; }
 
 /* ---- Portfolio ---- */
 .portfolio-card img { border-radius: .7rem; margin-bottom: 1rem; aspect-ratio: 16/10; object-fit: cover; background: var(--bg-elevated); }
@@ -302,6 +314,7 @@ body.landing {
         border-top: 1px solid var(--border);
     }
     .landing-nav a { padding: .75rem .25rem; border-bottom: 1px solid var(--border); }
+    .landing-nav-auth { display: block; }
     .landing-nav-cta {
         display: block; margin-top: .75rem; text-align: center;
         background: linear-gradient(135deg, var(--accent), var(--accent-2));

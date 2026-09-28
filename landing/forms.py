@@ -1,7 +1,29 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from assistant.forms import WorkspaceUserCreateForm
+
 from .models import LandingSettings, Tariff, PortfolioItem, Testimonial
+
+
+class RegistrationForm(WorkspaceUserCreateForm):
+    """
+    Landing page'dagi ro'yxatdan o'tish (email + parol). Har doim bepul tarif
+    bilan boshlanadi — Pro'ga faqat super admin o'tkazadi (Telegram orqali murojaatdan keyin).
+    """
+
+    plan = None
+    pro_days = None
+    password2 = forms.CharField(
+        label=_("Parolni takrorlang"),
+        widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("password") and cleaned.get("password") != cleaned.get("password2"):
+            self.add_error("password2", _("Parollar bir xil emas."))
+        return cleaned
 
 
 class ContactLeadForm(forms.Form):

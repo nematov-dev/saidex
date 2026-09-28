@@ -7,6 +7,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
@@ -19,12 +20,12 @@ from openpyxl import Workbook
 
 from .models import (
     Document, Lead, ConversationLog, BotConfig, ProjectSubscription, TelegramAccountConnection,
-    TelegramGroup,
+    TelegramGroup, Workspace,
 )
 from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
-from .forms import DocumentUploadForm, BotConfigForm
+from .forms import DocumentUploadForm, BotConfigForm, WorkspaceUserCreateForm
 from .services.rag import index_document
 
 # Super admin bo'limi (/saidex/) butunlay alohida — business admin (is_staff)
@@ -36,8 +37,23 @@ superadmin_required = user_passes_test(
 )
 
 
+def _workspace(request) -> Workspace:
+    """Joriy foydalanuvchining ish maydoni — biznes paneldagi barcha ma'lumotlar shunga cheklanadi."""
+    return Workspace.for_user(request.user)
+
+
+class EmailOrUsernameAuthenticationForm(AuthenticationForm):
+    """Ro'yxatdan o'tganlar login sifatida email'dan foydalanadi (username=email, kichik harflarda)."""
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username", "").strip()
+        return username.lower() if "@" in username else username
+
+
 class BusinessLoginView(LoginView):
     template_name = "assistant/login.html"
+    authentication_form = EmailOrUsernameAuthenticationForm
+    redirect_authenticated_user = True
 
 
 class BusinessLogoutView(LogoutView):
@@ -108,22 +124,26 @@ def dashboard(request):
     qilgani va nechta SAVOLGA javob berilgani (shundan AI ulushi bilan).
     """
     today = timezone.now().date()
-    conversations_total = ConversationLog.objects.count()
-    ai_answered_total = ConversationLog.objects.filter(answered_by_ai=True).count()
+    workspace = _workspace(request)
+    conversations = ConversationLog.objects.filter(workspace=workspace)
+    documents = Document.objects.filter(workspace=workspace)
+    leads = Lead.objects.filter(workspace=workspace)
+    conversations_total = conversations.count()
+    ai_answered_total = conversations.filter(answered_by_ai=True).count()
     context = {
-        "config": BotConfig.get_solo(),
-        "subscription": ProjectSubscription.get_solo(),
-        "documents_count": Document.objects.count(),
-        "documents_ready": Document.objects.filter(status="ready").count(),
-        "leads_new": Lead.objects.filter(status="new").count(),
-        "leads_total": Lead.objects.count(),
-        "unique_users_total": ConversationLog.objects.values("telegram_user_id").distinct().count(),
-        "unique_users_today": ConversationLog.objects.filter(created_at__date=today)
+        "config": workspace.config,
+        "subscription": workspace.subscription,
+        "documents_count": documents.count(),
+        "documents_ready": documents.filter(status="ready").count(),
+        "leads_new": leads.filter(status="new").count(),
+        "leads_total": leads.count(),
+        "unique_users_total": conversations.values("telegram_user_id").distinct().count(),
+        "unique_users_today": conversations.filter(created_at__date=today)
             .values("telegram_user_id").distinct().count(),
         "conversations_total": conversations_total,
         "ai_answered_total": ai_answered_total,
         "ai_answered_percent": round(ai_answered_total * 100 / conversations_total) if conversations_total else 0,
-        "recent_leads": Lead.objects.all()[:5],
+        "recent_leads": leads[:5],
     }
     return render(request, "assistant/dashboard.html", context)
 
@@ -134,6 +154,7 @@ def document_list(request):
         form = DocumentUploadForm(request.POST, request.FILES)
         if form.is_valid():
             doc = form.save(commit=False)
+            doc.workspace = _workspace(request)
             doc.uploaded_by = request.user
             doc.save()
             index_document(doc)  # sinxron; katta hujjatlar uchun Celery/RQ ga o'tkazish tavsiya etiladi
@@ -149,14 +170,14 @@ def document_list(request):
     else:
         form = DocumentUploadForm()
 
-    documents = Document.objects.all()
+    documents = Document.objects.filter(workspace=_workspace(request))
     return render(request, "assistant/documents.html", {"documents": documents, "form": form})
 
 
 @login_required
 @require_POST
 def document_delete(request, pk):
-    doc = get_object_or_404(Document, pk=pk)
+    doc = get_object_or_404(Document, pk=pk, workspace=_workspace(request))
     doc.file.delete(save=False)
     doc.delete()
     messages.success(request, _("Hujjat o'chirildi."))
@@ -166,7 +187,7 @@ def document_delete(request, pk):
 @login_required
 @require_POST
 def document_reprocess(request, pk):
-    doc = get_object_or_404(Document, pk=pk)
+    doc = get_object_or_404(Document, pk=pk, workspace=_workspace(request))
     index_document(doc)
     messages.info(request, _("Qayta ishlandi: %(status)s") % {"status": doc.get_status_display()})
     return redirect("assistant:documents")
@@ -174,11 +195,12 @@ def document_reprocess(request, pk):
 
 @login_required
 def prompt_settings(request):
-    config = BotConfig.get_solo()
+    workspace = _workspace(request)
+    config = workspace.config
     if request.method == "POST":
         form = BotConfigForm(request.POST, instance=config)
         if form.is_valid():
-            subscription = ProjectSubscription.get_solo()
+            subscription = workspace.subscription
             if form.cleaned_data["ai_enabled"] and not subscription.is_service_active:
                 messages.error(request, _("AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning."))
                 form.instance.ai_enabled = False
@@ -193,8 +215,9 @@ def prompt_settings(request):
 @login_required
 @require_POST
 def toggle_ai(request):
-    config = BotConfig.get_solo()
-    subscription = ProjectSubscription.get_solo()
+    workspace = _workspace(request)
+    config = workspace.config
+    subscription = workspace.subscription
     if not config.ai_enabled and not subscription.is_service_active:
         messages.error(request, _("AI'ni yoqish uchun avval obuna oling — adminlarga bog'laning."))
         return redirect("assistant:dashboard")
@@ -211,7 +234,7 @@ def _leads_queryset(request, is_archived: bool):
     """Status bo'yicha filter (GET ?status=) qo'llangan, arxiv holatiga
     mos Lead queryset'ini qaytaradi — leads_list va leads_archive ikkalasi
     ham shu funksiyadan foydalanadi."""
-    qs = Lead.objects.filter(is_archived=is_archived)
+    qs = Lead.objects.filter(workspace=_workspace(request), is_archived=is_archived)
     status = request.GET.get("status", "")
     if status in dict(Lead.STATUS_CHOICES):
         qs = qs.filter(status=status)
@@ -280,7 +303,7 @@ def _redirect_next(request, fallback):
 @login_required
 @require_POST
 def lead_update_status(request, pk):
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, workspace=_workspace(request))
     new_status = request.POST.get("status")
     note = request.POST.get("admin_note", "")
     if new_status in dict(Lead.STATUS_CHOICES):
@@ -294,7 +317,7 @@ def lead_update_status(request, pk):
 @login_required
 @require_POST
 def lead_archive(request, pk):
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, workspace=_workspace(request))
     lead.is_archived = True
     lead.save(update_fields=["is_archived"])
     messages.success(request, _("Ariza arxivga o'tkazildi."))
@@ -304,7 +327,7 @@ def lead_archive(request, pk):
 @login_required
 @require_POST
 def lead_delete(request, pk):
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, workspace=_workspace(request))
     was_archived = lead.is_archived
     lead.delete()
     messages.success(request, _("Ariza o'chirildi."))
@@ -315,8 +338,9 @@ def lead_delete(request, pk):
 @require_POST
 def leads_bulk_delete(request):
     ids = request.POST.getlist("lead_ids")
-    was_archived = Lead.objects.filter(pk__in=ids, is_archived=True).exists()
-    deleted_count, _details = Lead.objects.filter(pk__in=ids).delete()
+    own_leads = Lead.objects.filter(workspace=_workspace(request), pk__in=ids)
+    was_archived = own_leads.filter(is_archived=True).exists()
+    deleted_count, _details = own_leads.delete()
     if deleted_count:
         messages.success(request, _("%(count)s ta ariza o'chirildi.") % {"count": deleted_count})
     return _redirect_next(request, "assistant:leads_archive" if was_archived else "assistant:leads")
@@ -330,7 +354,8 @@ def groups_list(request):
     Admin shu yerdan har bir guruh uchun AI javob berish-bermasligini va
     javob berish tartibini (kalit so'z bilan/kalitsiz, kimga) sozlaydi.
     """
-    config = BotConfig.get_solo()
+    workspace = _workspace(request)
+    config = workspace.config
     if request.method == "POST" and request.POST.get("action") == "save_keywords":
         keywords = request.POST.get("group_trigger_keywords", "").strip()
         if keywords:
@@ -341,14 +366,14 @@ def groups_list(request):
             messages.error(request, _("Kalit so'zlar bo'sh bo'lishi mumkin emas."))
         return redirect("assistant:groups")
 
-    groups = TelegramGroup.objects.all()
+    groups = TelegramGroup.objects.filter(workspace=workspace)
     return render(request, "assistant/groups.html", {"groups": groups, "config": config})
 
 
 @login_required
 @require_POST
 def group_update(request, pk):
-    group = get_object_or_404(TelegramGroup, pk=pk)
+    group = get_object_or_404(TelegramGroup, pk=pk, workspace=_workspace(request))
     group.is_ai_enabled = request.POST.get("is_ai_enabled") == "on"
 
     reply_mode = request.POST.get("reply_mode")
@@ -369,7 +394,7 @@ def group_update(request, pk):
 
 @csrf_exempt
 def internal_stats_api(request):
-    """Tashqi integratsiyalar uchun (masalan hisobot xizmatlari) statistikani beradi.
+    """Tashqi integratsiyalar uchun (masalan hisobot xizmatlari) umumiy statistikani beradi.
     Header: X-Internal-Token: <INTERNAL_API_TOKEN>
     """
     token = request.headers.get("X-Internal-Token")
@@ -377,13 +402,10 @@ def internal_stats_api(request):
         return HttpResponseForbidden("Forbidden")
 
     since_week = timezone.now() - timedelta(days=7)
-    config = BotConfig.get_solo()
-    subscription = ProjectSubscription.get_solo()
     data = {
         "business_name": settings.BUSINESS_NAME,
-        "ai_enabled": config.ai_enabled,
-        "subscription_active": subscription.is_service_active,
-        "subscription_days_left": subscription.days_left,
+        "workspaces_total": Workspace.objects.count(),
+        "workspaces_pro": sum(1 for sub in ProjectSubscription.objects.all() if sub.is_pro),
         "documents_total": Document.objects.count(),
         "documents_ready": Document.objects.filter(status="ready").count(),
         "leads_total": Lead.objects.count(),
@@ -394,27 +416,30 @@ def internal_stats_api(request):
     return JsonResponse(data)
 
 
+@login_required
+def subscription_page(request):
+    """Foydalanuvchining obunasi: joriy tarif, bepul limitdan qancha ishlatilgani va Pro olish tugmasi."""
+    return render(request, "assistant/subscription.html", {"subscription": _workspace(request).subscription})
+
+
 # ---------------------------------------------------------------------------
 # SUPER ADMIN — faqat is_superuser=True foydalanuvchi (siz) kira oladi.
-# Obuna va loyihaning umumiy yoq/yondir kaliti shu yerda boshqariladi.
+# Foydalanuvchilar (ish maydonlari), ularning obunasi va AI modeli shu yerda boshqariladi.
 # ---------------------------------------------------------------------------
 
 @superadmin_required
 def superadmin_dashboard(request):
     since_week = timezone.now() - timedelta(days=7)
+    subscriptions = list(ProjectSubscription.objects.select_related("workspace__owner"))
     context = {
-        "subscription": ProjectSubscription.get_solo(),
-        "config": BotConfig.get_solo(),
-        "documents_count": Document.objects.count(),
+        "workspaces_total": Workspace.objects.count(),
+        "pro_total": sum(1 for sub in subscriptions if sub.is_pro),
+        "free_total": sum(1 for sub in subscriptions if not sub.is_pro),
+        "expiring_soon": [sub for sub in subscriptions if sub.is_pro and sub.days_left <= 5],
+        "recent_workspaces": Workspace.objects.select_related("owner", "project_subscription")[:8],
         "leads_total": Lead.objects.count(),
-        "leads_by_status": {
-            code: Lead.objects.filter(status=code).count() for code, label in Lead.STATUS_CHOICES
-        },
         "conversations_week": ConversationLog.objects.filter(created_at__gte=since_week).count(),
-        "conversations_by_channel": {
-            code: ConversationLog.objects.filter(channel=code).count() for code, label in ConversationLog.CHANNEL_CHOICES
-        },
-        "available_models": settings.AVAILABLE_LLM_MODELS,
+        "telegram_connected": TelegramAccountConnection.objects.filter(status="connected").count(),
     }
     return render(request, "assistant/superadmin_dashboard.html", context)
 
@@ -426,10 +451,83 @@ def superadmin_profile(request):
     )
 
 
+USERS_PER_PAGE = 25
+
+
+@superadmin_required
+def superadmin_users(request):
+    """Barcha foydalanuvchilar (ish maydonlari) ro'yxati — qidiruv va tarif bo'yicha filter bilan."""
+    qs = Workspace.objects.select_related("owner", "project_subscription")
+    query = request.GET.get("q", "").strip()
+    if query:
+        qs = qs.filter(
+            Q(owner__username__icontains=query) | Q(owner__email__icontains=query) | Q(name__icontains=query)
+        )
+    plan = request.GET.get("plan", "")
+    if plan in dict(ProjectSubscription.PLAN_CHOICES):
+        qs = qs.filter(project_subscription__plan=plan)
+
+    page_obj = Paginator(qs, USERS_PER_PAGE).get_page(request.GET.get("page"))
+    return render(request, "assistant/superadmin_users.html", {
+        "page_obj": page_obj,
+        "workspaces": page_obj.object_list,
+        "query": query,
+        "plan_filter": plan,
+        "plan_choices": ProjectSubscription.PLAN_CHOICES,
+        "form": WorkspaceUserCreateForm(),
+    })
+
+
 @superadmin_required
 @require_POST
-def superadmin_extend(request):
-    subscription = ProjectSubscription.get_solo()
+def superadmin_user_create(request):
+    form = WorkspaceUserCreateForm(request.POST)
+    if not form.is_valid():
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+        return redirect("assistant:superadmin_users")
+
+    workspace = form.save()
+    messages.success(
+        request, _("Foydalanuvchi qo'shildi: %(user)s") % {"user": workspace.owner.get_username()},
+    )
+    return redirect("assistant:superadmin_user_detail", pk=workspace.pk)
+
+
+def _get_workspace_or_404(pk) -> Workspace:
+    return get_object_or_404(Workspace.objects.select_related("owner"), pk=pk)
+
+
+@superadmin_required
+def superadmin_user_detail(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    since_week = timezone.now() - timedelta(days=7)
+    conversations = ConversationLog.objects.filter(workspace=workspace)
+    return render(request, "assistant/superadmin_user_detail.html", {
+        "workspace": workspace,
+        "owner": workspace.owner,
+        "subscription": workspace.subscription,
+        "config": workspace.config,
+        "connection": workspace.telegram_connection,
+        "documents_count": Document.objects.filter(workspace=workspace).count(),
+        "leads_total": Lead.objects.filter(workspace=workspace).count(),
+        "conversations_total": conversations.count(),
+        "conversations_week": conversations.filter(created_at__gte=since_week).count(),
+        "available_models": settings.AVAILABLE_LLM_MODELS,
+    })
+
+
+def _redirect_user_detail(workspace):
+    return redirect("assistant:superadmin_user_detail", pk=workspace.pk)
+
+
+@superadmin_required
+@require_POST
+def superadmin_extend(request, pk):
+    """Pro obunani berilgan muddatga uzaytiradi (bepul foydalanuvchini Pro'ga o'tkazadi)."""
+    workspace = _get_workspace_or_404(pk)
+    subscription = workspace.subscription
     custom_amount = request.POST.get("custom_amount", "").strip()
     if custom_amount:
         try:
@@ -438,7 +536,7 @@ def superadmin_extend(request):
             amount = 0
         if amount <= 0:
             messages.error(request, _("Noto'g'ri muddat kiritildi."))
-            return redirect("assistant:superadmin_dashboard")
+            return _redirect_user_detail(workspace)
         days = amount * 30 if request.POST.get("custom_unit") == "months" else amount
     else:
         days = int(request.POST.get("days", 30))
@@ -446,25 +544,64 @@ def superadmin_extend(request):
     end_str = subscription.subscription_end.strftime("%d.%m.%Y")
     messages.success(
         request,
-        _("Obuna %(days)s kunga uzaytirildi. Yangi muddat: %(end)s") % {"days": days, "end": end_str},
+        _("Pro obuna %(days)s kunga uzaytirildi. Yangi muddat: %(end)s") % {"days": days, "end": end_str},
     )
-    return redirect("assistant:superadmin_dashboard")
+    return _redirect_user_detail(workspace)
 
 
 @superadmin_required
 @require_POST
-def superadmin_toggle(request):
-    subscription = ProjectSubscription.get_solo()
+def superadmin_set_free(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    workspace.subscription.set_free()
+    messages.success(request, _("Foydalanuvchi bepul tarifga o'tkazildi."))
+    return _redirect_user_detail(workspace)
+
+
+@superadmin_required
+@require_POST
+def superadmin_set_limit(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    subscription = workspace.subscription
+    try:
+        limit = int(request.POST.get("free_question_limit", ""))
+    except ValueError:
+        limit = -1
+    if limit < 0:
+        messages.error(request, _("Noto'g'ri limit kiritildi."))
+        return _redirect_user_detail(workspace)
+    subscription.free_question_limit = limit
+    subscription.save(update_fields=["free_question_limit"])
+    messages.success(request, _("Bepul savollar limiti: %(limit)s") % {"limit": limit})
+    return _redirect_user_detail(workspace)
+
+
+@superadmin_required
+@require_POST
+def superadmin_toggle(request, pk):
+    """Foydalanuvchini bloklash/faollashtirish: AI to'xtaydi va u panelga kira olmaydi."""
+    workspace = _get_workspace_or_404(pk)
+    owner = workspace.owner
+    if owner.is_superuser:
+        messages.error(request, _("Super admin hisobini bloklab bo'lmaydi."))
+        return _redirect_user_detail(workspace)
+    subscription = workspace.subscription
     subscription.is_active = not subscription.is_active
     subscription.save(update_fields=["is_active"])
-    messages.success(request, _("Loyiha yoqildi.") if subscription.is_active else _("Loyiha butunlay o'chirildi."))
-    return redirect("assistant:superadmin_dashboard")
+    owner.is_active = subscription.is_active
+    owner.save(update_fields=["is_active"])
+    messages.success(
+        request,
+        _("Foydalanuvchi faollashtirildi.") if subscription.is_active else _("Foydalanuvchi bloklandi."),
+    )
+    return _redirect_user_detail(workspace)
 
 
 @superadmin_required
 @require_POST
-def superadmin_set_model(request):
-    subscription = ProjectSubscription.get_solo()
+def superadmin_set_model(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    subscription = workspace.subscription
     model_name = request.POST.get("llm_model")
     valid_models = dict(settings.AVAILABLE_LLM_MODELS)
     if model_name in valid_models:
@@ -476,12 +613,45 @@ def superadmin_set_model(request):
         )
     else:
         messages.error(request, _("Noto'g'ri model tanlandi."))
-    return redirect("assistant:superadmin_dashboard")
+    return _redirect_user_detail(workspace)
+
+
+@superadmin_required
+@require_POST
+def superadmin_set_password(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    password = request.POST.get("new_password", "")
+    if len(password) < 8:
+        messages.error(request, _("Parol kamida 8 belgidan iborat bo'lishi kerak."))
+        return _redirect_user_detail(workspace)
+    workspace.owner.set_password(password)
+    workspace.owner.save(update_fields=["password"])
+    messages.success(request, _("Yangi parol o'rnatildi."))
+    return _redirect_user_detail(workspace)
+
+
+@superadmin_required
+@require_POST
+def superadmin_user_delete(request, pk):
+    workspace = _get_workspace_or_404(pk)
+    owner = workspace.owner
+    if workspace.is_main or owner.is_superuser:
+        messages.error(request, _("Asosiy ish maydoni yoki super admin hisobini o'chirib bo'lmaydi."))
+        return _redirect_user_detail(workspace)
+    connection = TelegramAccountConnection.objects.filter(workspace=workspace).first()
+    if connection:
+        _disconnect_telegram_account(connection)
+    for doc in Document.objects.filter(workspace=workspace):
+        doc.file.delete(save=False)
+    username = owner.get_username()
+    owner.delete()  # CASCADE: ish maydoni va unga tegishli barcha ma'lumotlar ham o'chadi
+    messages.success(request, _("Foydalanuvchi o'chirildi: %(user)s") % {"user": username})
+    return redirect("assistant:superadmin_users")
 
 
 # ---------------------------------------------------------------------------
-# Telegram AKKAUNT (userbot) ulash — faqat super admin.
-# Bir vaqtning o'zida faqat bitta akkaunt ulanadi.
+# Telegram AKKAUNT (userbot) ulash. Har bir ish maydoni o'z akkauntini ulaydi;
+# super admin panelidagi sahifa asosiy (Saidex) ish maydonining akkauntini boshqaradi.
 # ---------------------------------------------------------------------------
 
 def _telethon_client(session_string: str = ""):
@@ -492,9 +662,14 @@ def _telethon_client(session_string: str = ""):
     )
 
 
+def _main_workspace(request) -> Workspace:
+    """Super admin paneli boshqaradigan ish maydoni — asosiy (Saidex), bo'lmasa super adminning o'zi."""
+    return Workspace.main() or _workspace(request)
+
+
 @superadmin_required
 def telegram_account(request):
-    connection = TelegramAccountConnection.get_solo()
+    connection = _main_workspace(request).telegram_connection
     api_configured = bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH)
     return render(request, "assistant/telegram_account.html", {
         "connection": connection,
@@ -502,12 +677,11 @@ def telegram_account(request):
     })
 
 
-def _send_code_logic(request):
+def _send_code_logic(request, connection):
     """Telefon raqamiga tasdiqlash kodi yuborish — super admin va biznes admin
     ikkalasi ham ishlatadigan umumiy mantiq (faqat keyingi redirect manzili
     chaqiruvchi view'da farqlanadi)."""
     phone = request.POST.get("phone_number", "").strip()
-    connection = TelegramAccountConnection.get_solo()
 
     if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
         messages.error(
@@ -522,6 +696,10 @@ def _send_code_logic(request):
 
     if not phone:
         messages.error(request, _("Telefon raqamini kiriting (masalan +998901234567)."))
+        return
+
+    if TelegramAccountConnection.objects.filter(status="connected", phone_number=phone).exclude(pk=connection.pk).exists():
+        messages.error(request, _("Bu raqam boshqa hisobga allaqachon ulangan."))
         return
 
     client = _telethon_client()
@@ -543,12 +721,11 @@ def _send_code_logic(request):
         client.disconnect()
 
 
-def _verify_code_logic(request):
+def _verify_code_logic(request, connection):
     """Yuborilgan kodni tasdiqlash — ikkala panel uchun umumiy mantiq.
     Agar 2FA kerak bo'lsa, ("pending_password", None) qaytaradi, aks holda
     (holat, xabar) emas — chaqiruvchi view natijani status orqali biladi."""
     code = request.POST.get("code", "").strip()
-    connection = TelegramAccountConnection.get_solo()
 
     if connection.status != "pending_code":
         messages.error(request, _("Avval telefon raqamni kiriting."))
@@ -584,10 +761,9 @@ def _verify_code_logic(request):
         client.disconnect()
 
 
-def _verify_password_logic(request):
+def _verify_password_logic(request, connection):
     """2FA parolini tasdiqlash — ikkala panel uchun umumiy mantiq."""
     password = request.POST.get("password", "")
-    connection = TelegramAccountConnection.get_solo()
 
     if connection.status != "pending_password":
         messages.error(request, _("Kutilmagan holat, qaytadan urinib ko'ring."))
@@ -621,28 +797,27 @@ def _verify_password_logic(request):
 @superadmin_required
 @require_POST
 def telegram_send_code(request):
-    _send_code_logic(request)
+    _send_code_logic(request, _main_workspace(request).telegram_connection)
     return redirect("assistant:telegram_account")
 
 
 @superadmin_required
 @require_POST
 def telegram_verify_code(request):
-    _verify_code_logic(request)
+    _verify_code_logic(request, _main_workspace(request).telegram_connection)
     return redirect("assistant:telegram_account")
 
 
 @superadmin_required
 @require_POST
 def telegram_verify_password(request):
-    _verify_password_logic(request)
+    _verify_password_logic(request, _main_workspace(request).telegram_connection)
     return redirect("assistant:telegram_account")
 
 
-def _disconnect_telegram_account():
+def _disconnect_telegram_account(connection):
     """Telethon sessiyasini tugatib, TelegramAccountConnection'ni tozalaydi.
     Ham super admin, ham biznes admin uzish tugmasi shu funksiyani ishlatadi."""
-    connection = TelegramAccountConnection.get_solo()
 
     if connection.session_string:
         try:
@@ -666,7 +841,7 @@ def _disconnect_telegram_account():
 @superadmin_required
 @require_POST
 def telegram_disconnect(request):
-    _disconnect_telegram_account()
+    _disconnect_telegram_account(_main_workspace(request).telegram_connection)
     messages.success(request, _("Telegram akkaunt uzildi."))
     return redirect("assistant:telegram_account")
 
@@ -675,13 +850,12 @@ def telegram_disconnect(request):
 # Telegram akkaunt — biznes admin panelida ham to'liq ishlaydi (holat, ulash
 # va uzish). Mantiq super admin bilan bir xil (_send_code_logic va h.k.),
 # faqat ruxsat darajasi (@login_required) va redirect manzili farqlanadi.
-# Bir vaqtning o'zida faqat BITTA akkaunt ulanishi mumkin (TelegramAccountConnection
-# singleton) — qaysi panel orqali ulanganidan qat'i nazar.
+# Har bir foydalanuvchi faqat o'z ish maydonining akkauntini ulaydi/uzadi.
 # ---------------------------------------------------------------------------
 
 @login_required
 def telegram_status(request):
-    connection = TelegramAccountConnection.get_solo()
+    connection = _workspace(request).telegram_connection
     api_configured = bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH)
     return render(request, "assistant/telegram_status.html", {
         "connection": connection,
@@ -692,27 +866,27 @@ def telegram_status(request):
 @login_required
 @require_POST
 def telegram_send_code_business(request):
-    _send_code_logic(request)
+    _send_code_logic(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
 
 
 @login_required
 @require_POST
 def telegram_verify_code_business(request):
-    _verify_code_logic(request)
+    _verify_code_logic(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
 
 
 @login_required
 @require_POST
 def telegram_verify_password_business(request):
-    _verify_password_logic(request)
+    _verify_password_logic(request, _workspace(request).telegram_connection)
     return redirect("assistant:telegram_status")
 
 
 @login_required
 @require_POST
 def telegram_disconnect_business(request):
-    _disconnect_telegram_account()
+    _disconnect_telegram_account(_workspace(request).telegram_connection)
     messages.success(request, _("Telegram akkaunt uzildi."))
     return redirect("assistant:telegram_status")

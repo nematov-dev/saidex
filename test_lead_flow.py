@@ -20,7 +20,7 @@ Ishga tushirish: python3 test_lead_flow.py
 import os
 import sys
 
-PROJECT_DIR = "/sessions/quirky-beautiful-cray/mnt/agent_shablon"
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
@@ -36,8 +36,10 @@ import django  # noqa: E402
 django.setup()
 
 from django.db import connection  # noqa: E402
+from django.contrib.auth.models import Group, Permission, User  # noqa: E402
+from django.contrib.contenttypes.models import ContentType  # noqa: E402
 from assistant.models import (  # noqa: E402
-    BotConfig, ProjectSubscription, Lead, PendingLead, ConversationLog, TelegramGroup,
+    BotConfig, ProjectSubscription, Lead, PendingLead, ConversationLog, TelegramGroup, Workspace,
 )
 
 print("Ishlatilayotgan DB backend:", connection.settings_dict["ENGINE"])
@@ -46,7 +48,10 @@ assert connection.settings_dict["ENGINE"] == "django.db.backends.sqlite3", (
 )
 
 with connection.schema_editor() as schema_editor:
-    for model in (BotConfig, ProjectSubscription, Lead, PendingLead, ConversationLog, TelegramGroup):
+    for model in (
+        ContentType, Permission, Group, User, Workspace,
+        BotConfig, ProjectSubscription, Lead, PendingLead, ConversationLog, TelegramGroup,
+    ):
         schema_editor.create_model(model)
 
 from unittest.mock import patch  # noqa: E402
@@ -66,8 +71,9 @@ def check(name, condition, detail=""):
         print("FAIL " + name + "  " + detail)
 
 
-config = BotConfig.get_solo()
-ProjectSubscription.get_solo()
+WS = Workspace.objects.create(owner=User.objects.create(username="test_biznes"), is_main=True)
+config = WS.config
+WS.subscription.extend(30)
 
 check(
     "1.1 'narxi' so'zi joriy xabarda aniqlanadi",
@@ -121,7 +127,7 @@ check(
 )
 
 with patch.object(rag, "retrieve_context") as mock_retrieve:
-    answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+    answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
         "Siz kimsiz, bot bilan gaplashyapmanmi?", channel="userbot"
     )
     check(
@@ -135,7 +141,7 @@ with patch.object(rag, "retrieve_context") as mock_retrieve:
     )
 
 with patch.object(rag, "retrieve_context", return_value=""):
-    answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+    answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
         "Narxi qancha turadi?", channel="userbot"
     )
     check(
@@ -147,7 +153,7 @@ with patch.object(rag, "retrieve_context", return_value=""):
 
 with patch.object(rag, "retrieve_context", return_value="Bizning mahsulotlar haqida ma'lumot."):
     with patch.object(rag, "generate_answer", side_effect=RuntimeError("429 ResourceExhausted (simulyatsiya)")):
-        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
             "Sotib olaman, qanday buyurtma beraman?", channel="userbot"
         )
         check(
@@ -159,7 +165,7 @@ with patch.object(rag, "retrieve_context", return_value="Bizning mahsulotlar haq
 
 with patch.object(rag, "retrieve_context", return_value="Mahsulot narxi 100000 so'm."):
     with patch.object(rag, "generate_answer", return_value=("Narxi 100000 so'm.", 50, 20)):
-        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
             "Narxi qancha?", channel="userbot"
         )
         check("2.3 normal holatda AI javob beradi", answered_by_ai is True and answer == "Narxi 100000 so'm.")
@@ -167,7 +173,7 @@ with patch.object(rag, "retrieve_context", return_value="Mahsulot narxi 100000 s
 
 config.ai_enabled = False
 config.save(update_fields=["ai_enabled"])
-answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
     "Narxi qancha?", channel="userbot"
 )
 check("2.4 AI o'chirilganda javob bermaydi", answered_by_ai is False)
@@ -180,6 +186,7 @@ USERNAME = "test_mijoz"
 
 PendingLead.objects.filter(telegram_user_id=USER_ID).delete()
 PendingLead.objects.update_or_create(
+    workspace=WS,
     telegram_user_id=USER_ID,
     defaults={"telegram_username": USERNAME, "original_message": "Narxi qancha turadi?", "step": "name"},
 )
@@ -206,6 +213,7 @@ for raw, expected in phone_cases.items():
 
 valid_phone = handlers._extract_phone("+998901234567")
 Lead.objects.create(
+    workspace=WS,
     telegram_user_id=pending.telegram_user_id,
     telegram_username=pending.telegram_username,
     full_name=pending.full_name,
@@ -225,6 +233,7 @@ check("3.10 PendingLead o'chirildi (yakunlangach)", not PendingLead.objects.filt
 check("3.11 Lead status='new' (standart)", lead.status == "new")
 
 PendingLead.objects.update_or_create(
+    workspace=WS,
     telegram_user_id=999888777,
     defaults={"telegram_username": "ikkinchi_mijoz", "original_message": "Sotib olaman", "step": "phone", "full_name": "Vali"},
 )
@@ -255,7 +264,7 @@ with patch.object(rag, "retrieve_context", return_value="Saidex xizmatlari haqid
         rag, "generate_answer",
         return_value=("Iltimos, ismingizni va telefon raqamingizni qoldirsangiz, bog'lanamiz.", 10, 10),
     ):
-        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(
+        answer, in_tok, out_tok, answered_by_ai, wants_lead = rag.answer_question(WS, 
             "Man ham qildirmoqchi edim", channel="userbot"
         )
         check(
@@ -306,7 +315,7 @@ for text, expect_match, expect_stripped in group_cases:
             "got " + repr(stripped),
         )
 
-group, created = TelegramGroup.objects.get_or_create(chat_id=-100123456789, defaults={"title": "Test guruh"})
+group, created = TelegramGroup.objects.get_or_create(workspace=WS, chat_id=-100123456789, defaults={"title": "Test guruh"})
 check("5.3 TelegramGroup avtomatik yaratiladi", created is True)
 check("5.4 TelegramGroup standart holatda is_ai_enabled=False", group.is_ai_enabled is False)
 check("5.5 TelegramGroup standart reply_mode='keyword'", group.reply_mode == "keyword")

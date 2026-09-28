@@ -1,0 +1,70 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<h3 class="mb-4">{% trans "Obuna" %}</h3>
+
+<div class="card stat-card p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="text-muted small">{% trans "Joriy tarif" %}</div>
+            <div class="fs-3 fw-bold">
+                {% if subscription.is_pro %}
+                    <span class="badge bg-warning text-dark"><i class="bi bi-gem"></i> Pro</span>
+                {% else %}
+                    <span class="badge bg-secondary">{% trans "Bepul" %}</span>
+                {% endif %}
+            </div>
+            {% if subscription.is_pro %}
+                <div class="text-muted small mt-1">
+                    {% blocktrans with end_date=subscription.subscription_end|date:"d.m.Y" days=subscription.days_left %}Amal qiladi: {{ end_date }} gacha ({{ days }} kun qoldi){% endblocktrans %}
+                </div>
+            {% endif %}
+        </div>
+        {% if not subscription.is_pro %}
+        <div style="min-width: 260px;">
+            <div class="d-flex justify-content-between small mb-1">
+                <span>{% trans "Bepul savol-javoblar" %}</span>
+                <span class="fw-bold">{{ subscription.questions_used }} / {{ subscription.free_question_limit }}</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+                <div class="progress-bar {% if subscription.free_limit_reached %}bg-danger{% else %}bg-primary{% endif %}"
+                     style="width: {% widthratio subscription.questions_used subscription.free_question_limit 100 %}%"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card stat-card p-4 h-100 {% if not subscription.is_pro %}border border-2 border-secondary{% endif %}">
+            <h5>{% trans "Bepul" %}</h5>
+            <div class="fs-2 fw-bold mb-3">$0</div>
+            <ul class="list-unstyled mb-0">
+                <li class="mb-2"><i class="bi bi-check2 text-success"></i> {% blocktrans with limit=subscription.free_question_limit %}{{ limit }} ta savol-javob (AI javobi){% endblocktrans %}</li>
+                <li class="mb-2"><i class="bi bi-check2 text-success"></i> {% trans "Hujjat yuklash va AI sozlamalari" %}</li>
+                <li class="mb-2"><i class="bi bi-check2 text-success"></i> {% trans "Telegram akkaunt ulash" %}</li>
+                <li><i class="bi bi-check2 text-success"></i> {% trans "Arizalar (CRM)" %}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card stat-card p-4 h-100 {% if subscription.is_pro %}border border-2 border-warning{% endif %}">
+            <h5><i class="bi bi-gem text-warning"></i> Pro</h5>
+            <div class="fs-2 fw-bold mb-3">{{ PRO_PLAN_PRICE }} <small class="fs-6 text-muted">/ {% trans "oy" %}</small></div>
+            <ul class="list-unstyled mb-4">
+                <li class="mb-2"><i class="bi bi-check2 text-success"></i> {% trans "Cheksiz savol-javob" %}</li>
+                <li class="mb-2"><i class="bi bi-check2 text-success"></i> {% trans "Bepul tarifning barcha imkoniyatlari" %}</li>
+                <li><i class="bi bi-check2 text-success"></i> {% trans "Ustuvor yordam" %}</li>
+            </ul>
+            <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="btn btn-warning w-100 fw-semibold mt-auto">
+                <i class="bi bi-telegram"></i>
+                {% if subscription.is_pro %}{% trans "Pro'ni uzaytirish" %}{% else %}{% trans "Pro olish" %}{% endif %}
+            </a>
+            <div class="form-text mt-2 text-center">
+                {% blocktrans with username=SUPPORT_TELEGRAM_USERNAME %}Pro obuna olish uchun Telegram orqali <strong>@{{ username }}</strong> ga murojaat qiling. To'lovdan so'ng obunangizni admin faollashtiradi.{% endblocktrans %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

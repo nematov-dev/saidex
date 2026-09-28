@@ -28,6 +28,7 @@ urlpatterns = [
     path("telegram/verify-password/", views.telegram_verify_password_business, name="telegram_verify_password_business"),
     path("telegram/disconnect/", views.telegram_disconnect_business, name="telegram_disconnect_business"),
     path("profile/", views.profile, name="profile"),
+    path("subscription/", views.subscription_page, name="subscription"),
     path("internal/stats/", views.internal_stats_api, name="internal_stats"),
 
     # ------------------------------------------------------------------
@@ -51,9 +52,17 @@ urlpatterns = [
     path("saidex/login/", views.SuperAdminLoginView.as_view(), name="superadmin_login"),
     path("saidex/logout/", views.SuperAdminLogoutView.as_view(), name="superadmin_logout"),
     path("saidex/", views.superadmin_dashboard, name="superadmin_dashboard"),
-    path("saidex/extend/", views.superadmin_extend, name="superadmin_extend"),
-    path("saidex/toggle/", views.superadmin_toggle, name="superadmin_toggle"),
-    path("saidex/set-model/", views.superadmin_set_model, name="superadmin_set_model"),
+    # Foydalanuvchilar (ish maydonlari) va ularning obunasi
+    path("saidex/users/", views.superadmin_users, name="superadmin_users"),
+    path("saidex/users/create/", views.superadmin_user_create, name="superadmin_user_create"),
+    path("saidex/users/<int:pk>/", views.superadmin_user_detail, name="superadmin_user_detail"),
+    path("saidex/users/<int:pk>/extend/", views.superadmin_extend, name="superadmin_extend"),
+    path("saidex/users/<int:pk>/set-free/", views.superadmin_set_free, name="superadmin_set_free"),
+    path("saidex/users/<int:pk>/set-limit/", views.superadmin_set_limit, name="superadmin_set_limit"),
+    path("saidex/users/<int:pk>/toggle/", views.superadmin_toggle, name="superadmin_toggle"),
+    path("saidex/users/<int:pk>/set-model/", views.superadmin_set_model, name="superadmin_set_model"),
+    path("saidex/users/<int:pk>/password/", views.superadmin_set_password, name="superadmin_set_password"),
+    path("saidex/users/<int:pk>/delete/", views.superadmin_user_delete, name="superadmin_user_delete"),
     path("saidex/profile/", views.superadmin_profile, name="superadmin_profile"),
     # Telegram AKKAUNT (userbot) ulash
     path("saidex/telegram-account/", views.telegram_account, name="telegram_account"),

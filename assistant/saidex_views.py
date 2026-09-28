@@ -5,7 +5,7 @@ Barchasi document_list/leads_list bilan bir xil oddiy andoza: ro'yxat +
 qo'shish formasi + o'chirish tugmasi.
 """
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -13,8 +13,14 @@ from django.views.decorators.http import require_POST
 from landing.models import LandingSettings, Tariff, PortfolioItem, Testimonial
 from landing.forms import LandingSettingsForm, TariffForm, PortfolioItemForm, TestimonialForm
 
+# Landing page kontenti butun sayt uchun umumiy — uni faqat super admin tahrirlaydi
+# (oddiy ro'yxatdan o'tgan foydalanuvchilar bu bo'limni ko'rmaydi ham).
+superadmin_required = user_passes_test(
+    lambda u: u.is_active and u.is_superuser, login_url="assistant:superadmin_login"
+)
 
-@login_required
+
+@superadmin_required
 def saidex_settings(request):
     settings_obj = LandingSettings.get_solo()
     if request.method == "POST":
@@ -28,7 +34,7 @@ def saidex_settings(request):
     return render(request, "assistant/saidex_settings.html", {"form": form})
 
 
-@login_required
+@superadmin_required
 def saidex_tariffs(request):
     if request.method == "POST":
         form = TariffForm(request.POST)
@@ -42,7 +48,7 @@ def saidex_tariffs(request):
     return render(request, "assistant/saidex_tariffs.html", {"tariffs": tariffs, "form": form})
 
 
-@login_required
+@superadmin_required
 @require_POST
 def saidex_tariff_delete(request, pk):
     get_object_or_404(Tariff, pk=pk).delete()
@@ -50,7 +56,7 @@ def saidex_tariff_delete(request, pk):
     return redirect("assistant:saidex_tariffs")
 
 
-@login_required
+@superadmin_required
 def saidex_portfolio(request):
     if request.method == "POST":
         form = PortfolioItemForm(request.POST, request.FILES)
@@ -64,7 +70,7 @@ def saidex_portfolio(request):
     return render(request, "assistant/saidex_portfolio.html", {"items": items, "form": form})
 
 
-@login_required
+@superadmin_required
 @require_POST
 def saidex_portfolio_delete(request, pk):
     item = get_object_or_404(PortfolioItem, pk=pk)
@@ -74,7 +80,7 @@ def saidex_portfolio_delete(request, pk):
     return redirect("assistant:saidex_portfolio")
 
 
-@login_required
+@superadmin_required
 def saidex_testimonials(request):
     if request.method == "POST":
         form = TestimonialForm(request.POST, request.FILES)
@@ -88,7 +94,7 @@ def saidex_testimonials(request):
     return render(request, "assistant/saidex_testimonials.html", {"testimonials": testimonials, "form": form})
 
 
-@login_required
+@superadmin_required
 @require_POST
 def saidex_testimonial_delete(request, pk):
     t = get_object_or_404(Testimonial, pk=pk)

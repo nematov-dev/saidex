@@ -83,9 +83,10 @@ services:
     build: .
     container_name: saidex_userbot
     restart: unless-stopped
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python userbot/run.py"
+    # MUHIM: migratsiyalarni faqat "web" bajaradi — ikkalasi bir vaqtda "migrate"
+    # ishlatsa, bir-biri bilan to'qnashib (DuplicateColumn) yiqiladi. Userbot
+    # "web" sog'lom (migratsiya tugagan va gunicorn ishlayapti) bo'lgach ishga tushadi.
+    command: python userbot/run.py
     volumes:
       - .:/app
     env_file:
@@ -102,7 +103,7 @@ services:
       redis:
         condition: service_started
       web:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   pg_data:

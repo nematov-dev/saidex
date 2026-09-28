@@ -1,5 +1,5 @@
 """
-Obuna tugashiga oz qolganda super adminga (siz) Telegram orqali ogohlantirish yuboradi.
+Foydalanuvchilarning Pro obunasi tugashiga oz qolganda super adminga (siz) Telegram orqali ogohlantirish yuboradi.
 
 Kunlik cron sifatida ishlatilishi kerak, masalan:
     0 9 * * * cd /opt/agent_shablon/clients/<slug> && venv/bin/python manage.py check_subscription_alert
@@ -15,37 +15,41 @@ ALERT_THRESHOLD_DAYS = 5
 
 
 class Command(BaseCommand):
-    help = "Obuna tugashiga 5 kun (yoki kamroq) qolganda Telegram orqali ogohlantirish yuboradi."
+    help = "Foydalanuvchilarning Pro obunasi tugashiga 5 kun (yoki kamroq) qolganda Telegram orqali ogohlantirish yuboradi."
 
     def handle(self, *args, **options):
-        subscription = ProjectSubscription.get_solo()
-
         if not settings.TELEGRAM_BOT_TOKEN or not settings.SUPERADMIN_TELEGRAM_ID:
             self.stdout.write(self.style.WARNING(
                 "TELEGRAM_BOT_TOKEN yoki SUPERADMIN_TELEGRAM_ID sozlanmagan — ogohlantirish o'tkazib yuborildi."
             ))
             return
 
-        days_left = subscription.days_left
         today = timezone.now().date()
+        subscriptions = ProjectSubscription.objects.filter(plan="pro").select_related("workspace__owner")
+        for subscription in subscriptions:
+            self._check(subscription, today)
 
-        if days_left > ALERT_THRESHOLD_DAYS:
-            self.stdout.write(f"Obuna hali {days_left} kun bor — ogohlantirish shart emas.")
+    def _check(self, subscription, today):
+        name = subscription.workspace.owner.get_username()
+        days_left = subscription.days_left
+
+        # Faqat 5 kun qolganidan to muddati o'tganiga 3 kungacha ogohlantiramiz —
+        # aks holda Pro'si allaqachon tugagan eski foydalanuvchilar haqida har kuni xabar kelaverardi.
+        if days_left > ALERT_THRESHOLD_DAYS or days_left < -3:
             return
 
         if subscription.last_alert_sent_at == today:
-            self.stdout.write("Bugun allaqachon ogohlantirish yuborilgan.")
             return
 
         if days_left >= 0:
             text = (
-                f"⚠️ <b>{settings.BUSINESS_NAME}</b> obunasi {days_left} kundan so'ng tugaydi "
-                f"({subscription.subscription_end:%d.%m.%Y}). Obunani uzaytirishni unutmang."
+                f"⚠️ <b>{name}</b> Pro obunasi {days_left} kundan so'ng tugaydi "
+                f"({subscription.subscription_end:%d.%m.%Y})."
             )
         else:
             text = (
-                f"🛑 <b>{settings.BUSINESS_NAME}</b> obunasi muddati o'tib ketdi "
-                f"({subscription.subscription_end:%d.%m.%Y}). Loyiha hali ishlayapti, lekin tekshiring."
+                f"🛑 <b>{name}</b> Pro obunasi muddati o'tib ketdi "
+                f"({subscription.subscription_end:%d.%m.%Y}) — endi bepul tarif qoidalari amal qilmoqda."
             )
 
         try:
@@ -57,6 +61,6 @@ class Command(BaseCommand):
             resp.raise_for_status()
             subscription.last_alert_sent_at = today
             subscription.save(update_fields=["last_alert_sent_at"])
-            self.stdout.write(self.style.SUCCESS("Ogohlantirish yuborildi."))
+            self.stdout.write(self.style.SUCCESS(f"{name}: ogohlantirish yuborildi."))
         except requests.RequestException as exc:
-            self.stdout.write(self.style.ERROR(f"Yuborib bo'lmadi: {exc}"))
+            self.stdout.write(self.style.ERROR(f"{name}: yuborib bo'lmadi: {exc}"))

@@ -20,6 +20,32 @@
     </div>
 </div>
 
+<div class="card stat-card p-3 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="stat-icon {% if subscription.is_pro %}stat-icon-orange{% else %}stat-icon-purple{% endif %}"><i class="bi bi-gem"></i></span>
+            <div>
+                <div class="text-muted small">{% trans "Obuna" %}</div>
+                {% if subscription.is_pro %}
+                    <div class="fw-bold">Pro</div>
+                    <div class="text-muted small">{% blocktrans with end_date=subscription.subscription_end|date:"d.m.Y" %}{{ end_date }} gacha — cheksiz savol-javob{% endblocktrans %}</div>
+                {% else %}
+                    <div class="fw-bold">{% trans "Bepul" %}</div>
+                    <div class="text-muted small">{% blocktrans with used=subscription.questions_used limit=subscription.free_question_limit %}{{ used }} / {{ limit }} ta savol-javob ishlatildi{% endblocktrans %}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% if not subscription.is_pro %}
+            <div class="text-end">
+                <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="btn btn-warning btn-sm fw-semibold">
+                    <i class="bi bi-telegram"></i> {% trans "Pro olish" %} — {{ PRO_PLAN_PRICE }}/{% trans "oy" %}
+                </a>
+                <div class="form-text">{% blocktrans with username=SUPPORT_TELEGRAM_USERNAME %}Telegram orqali @{{ username }} ga murojaat qiling{% endblocktrans %}</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card stat-card stat-card-v2 p-3">

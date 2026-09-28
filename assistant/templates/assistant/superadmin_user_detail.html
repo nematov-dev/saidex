@@ -1,0 +1,152 @@
+{% extends "assistant/superadmin_base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <a href="{% url 'assistant:superadmin_users' %}" class="small">&larr; {% trans "Foydalanuvchilar" %}</a>
+        <h3 class="m-0 mt-1">
+            {{ owner.get_username }}
+            {% if workspace.is_main %}<span class="badge bg-info fs-6">Saidex</span>{% endif %}
+            {% if not subscription.is_active %}<span class="badge bg-danger fs-6">{% trans "bloklangan" %}</span>{% endif %}
+        </h3>
+        <div class="text-muted small">
+            {{ workspace.name|default:"—" }} ·
+            {% blocktrans with date=workspace.created_at|date:"d.m.Y H:i" %}ro'yxatdan o'tgan: {{ date }}{% endblocktrans %}
+            {% if owner.last_login %} · {% blocktrans with date=owner.last_login|date:"d.m.Y H:i" %}oxirgi kirish: {{ date }}{% endblocktrans %}{% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Tarif" %}</div>
+            <div class="fs-4 fw-bold">{% if subscription.is_pro %}Pro{% else %}{% trans "Bepul" %}{% endif %}</div>
+            <div class="text-muted small">
+                {% if subscription.is_pro %}
+                    {% blocktrans with end_date=subscription.subscription_end|date:"d.m.Y" days=subscription.days_left %}{{ end_date }} gacha ({{ days }} kun){% endblocktrans %}
+                {% else %}
+                    {{ subscription.questions_used }} / {{ subscription.free_question_limit }} {% trans "savol" %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Suhbatlar: jami / 7 kun" %}</div>
+            <div class="fs-4 fw-bold">{{ conversations_total }} / {{ conversations_week }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Hujjatlar / Arizalar" %}</div>
+            <div class="fs-4 fw-bold">{{ documents_count }} / {{ leads_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3">
+            <div class="text-muted small">{% trans "Telegram akkaunt" %}</div>
+            <div class="fw-bold mt-1">
+                {% if connection.is_connected %}
+                    <span class="text-success"><i class="bi bi-check-circle"></i> {{ connection.phone_number }}</span>
+                {% else %}
+                    <span class="text-muted">{% trans "Ulanmagan" %}</span>
+                {% endif %}
+            </div>
+            <div class="text-muted small">AI: {% if config.ai_enabled %}{% trans "yoqilgan" %}{% else %}{% trans "o'chirilgan" %}{% endif %}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card stat-card p-4 mb-3">
+            <h6>{% trans "Pro obuna berish / uzaytirish" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_extend' workspace.pk %}" class="d-flex gap-2 mb-2">
+                {% csrf_token %}
+                <select name="days" class="form-select">
+                    <option value="30">30 {% trans "kun" %}</option>
+                    <option value="90">90 {% trans "kun" %}</option>
+                    <option value="180">180 {% trans "kun" %}</option>
+                    <option value="365">365 {% trans "kun" %}</option>
+                </select>
+                <button class="btn btn-warning fw-semibold text-nowrap">{% trans "Pro berish" %}</button>
+            </form>
+            <form method="post" action="{% url 'assistant:superadmin_extend' workspace.pk %}" class="d-flex gap-2 mb-3">
+                {% csrf_token %}
+                <input type="number" name="custom_amount" min="1" class="form-control" placeholder="{% trans 'Boshqa miqdor' %}">
+                <select name="custom_unit" class="form-select" style="max-width: 110px;">
+                    <option value="days">{% trans "kun" %}</option>
+                    <option value="months">{% trans "oy" %}</option>
+                </select>
+                <button class="btn btn-outline-dark">{% trans "Qo'shish" %}</button>
+            </form>
+            {% if subscription.plan == 'pro' %}
+                {% trans "Rostdan bepul tarifga o'tkazmoqchimisiz?" as free_confirm %}
+                <form method="post" action="{% url 'assistant:superadmin_set_free' workspace.pk %}" data-confirm="{{ free_confirm }}">
+                    {% csrf_token %}
+                    <button class="btn btn-outline-secondary w-100">{% trans "Bepul tarifga o'tkazish" %}</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="card stat-card p-4 mb-3">
+            <h6>{% trans "Bepul savollar limiti" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_set_limit' workspace.pk %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="number" name="free_question_limit" min="0" class="form-control" value="{{ subscription.free_question_limit }}">
+                <button class="btn btn-dark">{% trans "Saqlash" %}</button>
+            </form>
+            <div class="form-text mt-2">{% blocktrans with used=subscription.questions_used %}Hozirgacha ishlatilgan: {{ used }} ta. Limitni oshirib, bepul foydalanuvchiga qo'shimcha savollar berishingiz mumkin.{% endblocktrans %}</div>
+        </div>
+
+        <div class="card stat-card p-4">
+            <h6>{% trans "AI modeli" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_set_model' workspace.pk %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <select name="llm_model" class="form-select">
+                    {% for value, label in available_models %}
+                        <option value="{{ value }}" {% if subscription.llm_model == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-dark">{% trans "Saqlash" %}</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card stat-card p-4 mb-3">
+            <h6>{% trans "Yangi parol o'rnatish" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_set_password' workspace.pk %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="text" name="new_password" minlength="8" class="form-control" placeholder="{% trans 'Kamida 8 belgi' %}" autocomplete="off" required>
+                <button class="btn btn-dark text-nowrap">{% trans "O'rnatish" %}</button>
+            </form>
+        </div>
+
+        {% if not owner.is_superuser %}
+        <div class="card stat-card p-4 mb-3">
+            <h6>{% trans "Hisobni bloklash" %}</h6>
+            <form method="post" action="{% url 'assistant:superadmin_toggle' workspace.pk %}">
+                {% csrf_token %}
+                <button class="btn {% if subscription.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %} w-100">
+                    {% if subscription.is_active %}{% trans "Bloklash" %}{% else %}{% trans "Faollashtirish" %}{% endif %}
+                </button>
+            </form>
+            <div class="form-text mt-2">{% trans "Bloklangan foydalanuvchi panelga kira olmaydi va uning AI'i javob bermaydi." %}</div>
+        </div>
+
+        {% if not workspace.is_main %}
+        <div class="card stat-card p-4 border border-danger">
+            <h6 class="text-danger">{% trans "Foydalanuvchini o'chirish" %}</h6>
+            {% trans "Foydalanuvchi va uning BARCHA ma'lumotlari (hujjatlar, arizalar, suhbatlar) butunlay o'chiriladi. Davom etasizmi?" as delete_confirm %}
+            <form method="post" action="{% url 'assistant:superadmin_user_delete' workspace.pk %}" data-confirm="{{ delete_confirm }}">
+                {% csrf_token %}
+                <button class="btn btn-danger w-100">{% trans "O'chirish" %}</button>
+            </form>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

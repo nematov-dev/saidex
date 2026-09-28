@@ -117,23 +117,53 @@ python userbot/run.py                      # Telegram AKKAUNT
    butunlay o'chirish/yoqish, va **AI modelini tanlash** (Gemini 2.5 Flash-Lite/Flash/Pro —
    narx va sifat orasida tanlov, faqat sizga ko'rinadi va faqat siz o'zgartira olasiz).
 
+## Foydalanuvchilar va obuna (multi-user)
+
+Loyiha endi ko'p foydalanuvchili: har kim landing page'dagi **"Ro'yxatdan o'tish"**
+(`/register/`) orqali email + parol bilan ro'yxatdan o'tadi va o'zining alohida ish
+maydonini (Workspace) oladi. Panelda (`/panel/`) har bir foydalanuvchi FAQAT o'ziga
+tegishli ma'lumotlarni ko'radi: bosh sahifa, hujjatlar, arizalar, guruhlar, AI
+sozlamalari, Telegram akkaunt va obuna.
+
+Tariflar:
+
+- **Bepul** — ro'yxatdan o'tganda jami `FREE_PLAN_QUESTION_LIMIT` (standart 20) ta AI javobi.
+  Limit tugasa, AI javob bermay qo'yadi va panelda "Pro olish" taklifi chiqadi.
+- **Pro** — cheksiz. "Pro olish" tugmasi Telegram'da `@SUPPORT_TELEGRAM_USERNAME` bilan
+  chatni "Salom, pro obuna olmoqchiman" matni bilan ochadi. To'lovdan keyin super admin
+  panelida (`/panel/saidex/users/` → foydalanuvchi → **"Pro berish"**) muddatni belgilaysiz.
+  Pro muddati tugasa, foydalanuvchi avtomatik bepul qoidalariga qaytadi.
+
+Super admin panelida (`/panel/saidex/`) foydalanuvchilarni qidirish, qo'lda qo'shish,
+Pro berish/uzaytirish, bepulga qaytarish, bepul limitni o'zgartirish, AI modelini tanlash,
+parolini tiklash, bloklash va o'chirish mumkin. Landing page kontenti (tariflar, sayt
+sozlamalari va h.k.) ham faqat super admin uchun ko'rinadi.
+
+Avvalgi bitta-biznes ma'lumotlari (Saidex'ning o'zi) migratsiya paytida **asosiy ish
+maydoni**ga (`is_main=True`) o'tkazilgan — landing page demo-chati va aloqa formasi shu
+ish maydonining hujjatlari va arizalaridan foydalanadi.
+
 ## Telegram AKKAUNT sifatida ulash (Telethon)
 
-Akkaunt ulash to'liq **admin panel orqali**, terminalga kod yozish shart emas:
+Akkaunt ulash to'liq **panel orqali**, terminalga kod yozish shart emas. Har bir
+foydalanuvchi o'z akkauntini o'zi ulaydi:
 
 1. `.env` fayliga `TELEGRAM_API_ID` va `TELEGRAM_API_HASH`ni kiriting
    (https://my.telegram.org/apps dan olinadi), dasturni qayta ishga tushiring.
-2. Admin panelga superuser bilan kiring → chap menyudan **"Telegram akkaunt"** ni oching.
+2. Panelga kiring → chap menyudan **"Telegram akkaunt"** ni oching.
 3. Telefon raqamni kiritib **"Kod yuborish"** tugmasini bosing — Telegram ilovangizga kod keladi.
 4. Kodni kiritib tasdiqlang (agar 2 bosqichli parol yoqilgan bo'lsa, u ham so'raladi).
-5. Ulangach, alohida terminalda ishga tushiring:
+
+`userbot/run.py` bitta jarayonda BARCHA foydalanuvchilarning ulangan akkauntlarini
+ishlatadi va har 20 soniyada bazani tekshiradi — yangi ulangan akkaunt qayta ishga
+tushirishsiz avtomatik ishlay boshlaydi, uzilgani esa to'xtatiladi:
 
 ```bash
 python userbot/run.py
 ```
 
-Bir vaqtning o'zida faqat **bitta** akkaunt ulanishi mumkin — yangisini ulashdan oldin
-avval joriysini shu sahifadagi **"Akkauntni uzish"** tugmasi orqali uzish kerak.
+Har bir foydalanuvchi bir vaqtda bitta akkaunt ulaydi; bitta telefon raqamni ikki
+xil hisobga ulab bo'lmaydi.
 
 Ishlash tartibi: foydalanuvchi yozadi → "yozmoqda..." holati ko'rinadi → RAG orqali
 javob beriladi → xarid niyati so'zlari aniqlansa, ism va telefon so'rab avtomatik

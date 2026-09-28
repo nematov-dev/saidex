@@ -112,9 +112,18 @@
                         <li>{{ feature }}</li>
                     {% endfor %}
                 </ul>
-                <a href="#contact" class="btn {% if tariff.is_featured %}btn-primary{% else %}btn-outline{% endif %} btn-block">
-                    {% trans "Buyurtma berish" %}
-                </a>
+                {% if tariff.is_free %}
+                    <a href="{% url 'landing:register' %}" class="btn {% if tariff.is_featured %}btn-primary{% else %}btn-outline{% endif %} btn-block">
+                        {% trans "Bepul boshlash" %}
+                    </a>
+                {% else %}
+                    <a href="{{ PRO_REQUEST_URL }}" target="_blank" rel="noopener" class="btn {% if tariff.is_featured %}btn-primary{% else %}btn-outline{% endif %} btn-block">
+                        ✈️ {% trans "Pro olish" %}
+                    </a>
+                    <p class="tariff-note">
+                        {% blocktrans with username=SUPPORT_TELEGRAM_USERNAME %}Telegram orqali <strong>@{{ username }}</strong> ga murojaat qiling — to'lovdan so'ng Pro obunangiz faollashtiriladi.{% endblocktrans %}
+                    </p>
+                {% endif %}
             </div>
             {% endfor %}
         </div>

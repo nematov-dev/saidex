@@ -66,9 +66,9 @@ services:
     build: .
     container_name: saidex_userbot
     restart: on-failure
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python userbot/run.py"
+    # Migratsiyalarni faqat "web" bajaradi (ikkalasi bir vaqtda ishlatsa to'qnashadi);
+    # web hali migratsiya qilayotgan bo'lsa, userbot xato bilan chiqadi va on-failure qayta ishga tushiradi.
+    command: python userbot/run.py
     volumes:
       - .:/app
     env_file:

@@ -83,9 +83,23 @@
                class="{% if request.resolver_match.url_name == 'superadmin_dashboard' %}active{% endif %}">
                 <i class="bi bi-speedometer2"></i> <span class="nav-label">{% trans "Boshqaruv paneli" %}</span>
             </a>
+            <a href="{% url 'assistant:superadmin_users' %}"
+               class="{% if request.resolver_match.url_name == 'superadmin_users' or request.resolver_match.url_name == 'superadmin_user_detail' %}active{% endif %}">
+                <i class="bi bi-people"></i> <span class="nav-label">{% trans "Foydalanuvchilar" %}</span>
+            </a>
             <a href="{% url 'assistant:telegram_account' %}"
                class="{% if request.resolver_match.url_name == 'telegram_account' %}active{% endif %}">
                 <i class="bi bi-telephone"></i> <span class="nav-label">{% trans "Telegram akkaunt" %}</span>
+            </a>
+        </nav>
+
+        <div class="nav-section-label">{% trans "Sayt" %}</div>
+        <nav class="nav flex-column gap-1">
+            <a href="{% url 'assistant:dashboard' %}">
+                <i class="bi bi-box-arrow-up-right"></i> <span class="nav-label">{% trans "Biznes panel" %}</span>
+            </a>
+            <a href="{% url 'assistant:saidex_tariffs' %}">
+                <i class="bi bi-tags"></i> <span class="nav-label">{% trans "Landing kontenti" %}</span>
             </a>
         </nav>
     </div>

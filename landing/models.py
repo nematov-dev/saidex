@@ -54,6 +54,11 @@ class Tariff(models.Model):
         return f"{self.name} ({self.get_period_display()})"
 
     @property
+    def is_free(self) -> bool:
+        """Narxda noldan boshqa raqam yo'q bo'lsa ("$0", "0 so'm") — bepul tarif."""
+        return not any(ch in "123456789" for ch in self.price)
+
+    @property
     def feature_list(self) -> list[str]:
         return [line.strip() for line in self.features.splitlines() if line.strip()]
 

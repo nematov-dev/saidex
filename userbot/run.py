@@ -2,12 +2,18 @@
 Telegram AKKAUNT (Telethon) sifatida ishga tushirish nuqtasi.
 Ishga tushirish: python userbot/run.py
 
-Akkaunt sessiyasi endi .env emas -- admin panel > Super Admin > "Telegram akkaunt"
-bo'limida ulanadi va bazada (TelegramAccountConnection) saqlanadi.
+Multi-user rejim: har bir ish maydoni (foydalanuvchi) o'z panelidagi "Telegram
+akkaunt" bo'limida o'z akkauntini ulaydi (TelegramAccountConnection, bazada).
+Bu jarayon BITTA bo'lib, barcha ulangan akkauntlarni bir vaqtda ishlatadi va
+har SYNC_INTERVAL soniyada bazani tekshirib turadi:
+  - yangi ulangan akkaunt -> avtomatik ishga tushiriladi (qayta ishga tushirishsiz);
+  - uzilgan yoki sessiyasi almashgan akkaunt -> to'xtatiladi.
 """
 import asyncio
+import logging
 import os
 import sys
+import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,43 +25,106 @@ django.setup()
 
 from asgiref.sync import sync_to_async  # noqa: E402
 from django.conf import settings  # noqa: E402
-from telethon import TelegramClient
-from telethon.sessions import StringSession
+from telethon import TelegramClient  # noqa: E402
+from telethon.sessions import StringSession  # noqa: E402
 
 from userbot.handlers import register_handlers  # noqa: E402
 
+logger = logging.getLogger("userbot")
+
+SYNC_INTERVAL = 20  # soniya
+# Xato bilan to'xtagan akkaunt (masalan tarmoq uzilishi) shuncha soniyadan keyin qayta ishga tushiriladi.
+RETRY_AFTER = 300
+
 
 @sync_to_async
-def get_connection():
+def get_connected_sessions() -> dict[int, tuple[str, str]]:
+    """{workspace_id: (session_string, phone_number)} — hozir ulangan barcha akkauntlar."""
     from assistant.models import TelegramAccountConnection
-    return TelegramAccountConnection.get_solo()
+    return {
+        conn.workspace_id: (conn.session_string, conn.phone_number)
+        for conn in TelegramAccountConnection.objects.filter(status="connected").exclude(session_string="")
+    }
+
+
+class AccountRunner:
+    """Bitta ish maydonining Telegram akkauntini alohida asyncio vazifasi sifatida ishlatadi."""
+
+    def __init__(self, workspace_id: int, session_string: str, phone: str):
+        self.workspace_id = workspace_id
+        self.session_string = session_string
+        self.phone = phone
+        self.client = TelegramClient(
+            StringSession(session_string),
+            int(settings.TELEGRAM_API_ID),
+            settings.TELEGRAM_API_HASH,
+        )
+        register_handlers(self.client, workspace_id)
+        self.stopped_at = None
+        self.task = asyncio.create_task(self._run())
+
+    async def _run(self):
+        try:
+            await self.client.connect()
+            if not await self.client.is_user_authorized():
+                logger.warning("Ish maydoni #%s: sessiya yaroqsiz (%s) — o'tkazib yuborildi.", self.workspace_id, self.phone)
+                return
+            print(f"[workspace #{self.workspace_id}] Telegram akkaunt ishga tushdi: {self.phone}", flush=True)
+            await self.client.run_until_disconnected()
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - bitta akkauntdagi xato boshqalarini to'xtatmasligi kerak
+            logger.exception("Ish maydoni #%s: Telegram akkaunt xatolik bilan to'xtadi.", self.workspace_id)
+        finally:
+            self.stopped_at = time.monotonic()
+
+    @property
+    def should_retry(self) -> bool:
+        return self.task.done() and self.stopped_at is not None and time.monotonic() - self.stopped_at > RETRY_AFTER
+
+    async def stop(self):
+        try:
+            await self.client.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
+        self.task.cancel()
+        try:
+            await self.task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        print(f"[workspace #{self.workspace_id}] Telegram akkaunt to'xtatildi: {self.phone}", flush=True)
 
 
 async def main():
+    logging.basicConfig(level=logging.INFO)
     if not (settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH):
         raise RuntimeError(
             "TELEGRAM_API_ID / TELEGRAM_API_HASH .env faylida to'liq emas. "
             "https://my.telegram.org/apps dan oling."
         )
 
-    connection = await get_connection()
-    if not connection.is_connected:
-        raise RuntimeError(
-            "Hech qanday Telegram akkaunt ulanmagan. Admin panelga kiring, "
-            "Super Admin bo'limidagi 'Telegram akkaunt' orqali ulang, "
-            "so'ng bu skriptni qayta ishga tushiring."
-        )
+    runners: dict[int, AccountRunner] = {}
+    print(f"[{settings.BUSINESS_NAME}] Userbot menejeri ishga tushdi (har {SYNC_INTERVAL} soniyada tekshiradi).", flush=True)
 
-    client = TelegramClient(
-        StringSession(connection.session_string),
-        int(settings.TELEGRAM_API_ID),
-        settings.TELEGRAM_API_HASH,
-    )
-    register_handlers(client)
+    while True:
+        try:
+            sessions = await get_connected_sessions()
+        except Exception:  # noqa: BLE001 - baza vaqtincha ishlamasa, keyingi tekshiruvda qayta urinamiz
+            logger.exception("Ulangan akkauntlarni o'qib bo'lmadi.")
+            sessions = None
 
-    print(f"[{settings.BUSINESS_NAME}] Telegram akkaunt (userbot) ishga tushdi: {connection.phone_number}")
-    await client.start()
-    await client.run_until_disconnected()
+        if sessions is not None:
+            for workspace_id, runner in list(runners.items()):
+                current = sessions.get(workspace_id)
+                if current is None or current[0] != runner.session_string or runner.should_retry:
+                    await runner.stop()
+                    del runners[workspace_id]
+
+            for workspace_id, (session_string, phone) in sessions.items():
+                if workspace_id not in runners:
+                    runners[workspace_id] = AccountRunner(workspace_id, session_string, phone)
+
+        await asyncio.sleep(SYNC_INTERVAL)
 
 
 if __name__ == "__main__":

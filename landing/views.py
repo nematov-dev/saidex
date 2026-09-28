@@ -1,15 +1,16 @@
 import json
 
 from django.contrib import messages
+from django.contrib.auth import login
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from assistant.models import ConversationLog, Lead
+from assistant.models import ConversationLog, Lead, Workspace
 from assistant.services.llm import transcribe_audio
 from assistant.services.rag import answer_question
-from .forms import ContactLeadForm
+from .forms import ContactLeadForm, RegistrationForm
 from .models import LandingSettings, Tariff, PortfolioItem, Testimonial
 from .ratelimit import get_client_ip, get_pseudo_user_id, is_rate_limited
 
@@ -18,6 +19,7 @@ from .ratelimit import get_client_ip, get_pseudo_user_id, is_rate_limited
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
 
 RATE_LIMIT_MESSAGE = _("So'rovlar soni ko'p — biroz kuting va qaytadan urinib ko'ring.")
+DEMO_UNAVAILABLE_MESSAGE = _("Demo hozircha mavjud emas.")
 
 
 def home(request):
@@ -31,11 +33,34 @@ def home(request):
     return render(request, "landing/home.html", context)
 
 
+def register(request):
+    """Email + parol bilan ro'yxatdan o'tish: yangi foydalanuvchi bepul tarif bilan
+    o'z ish maydonini oladi va darhol panelga (obuna ko'rinib turadigan bosh sahifaga) kiradi."""
+    if request.user.is_authenticated:
+        return redirect("assistant:dashboard")
+    if request.method == "POST":
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            workspace = form.save()
+            login(request, workspace.owner, backend="django.contrib.auth.backends.ModelBackend")
+            messages.success(
+                request,
+                _("Xush kelibsiz! Sizga %(limit)s ta bepul savol-javob berildi.")
+                % {"limit": workspace.subscription.free_question_limit},
+            )
+            return redirect("assistant:dashboard")
+    else:
+        form = RegistrationForm()
+    return render(request, "landing/register.html", {"form": form, "settings": LandingSettings.get_solo()})
+
+
 @require_POST
 def submit_contact(request):
     form = ContactLeadForm(request.POST)
-    if form.is_valid():
+    main_workspace = Workspace.main()
+    if form.is_valid() and main_workspace:
         Lead.objects.create(
+            workspace=main_workspace,
             telegram_user_id=0,
             full_name=form.cleaned_data["full_name"],
             phone=form.cleaned_data["phone"],
@@ -56,15 +81,16 @@ def submit_contact(request):
     return render(request, "landing/home.html", context)
 
 
-def _log_demo_conversation(request, question, answer, answered_by_ai, in_tok, out_tok):
+def _log_demo_conversation(request, workspace, question, answer, answered_by_ai, in_tok, out_tok):
     ConversationLog.objects.create(
+        workspace=workspace,
         telegram_user_id=get_pseudo_user_id(get_client_ip(request)),
         question=question, answer=answer or "", answered_by_ai=answered_by_ai,
         input_tokens=in_tok, output_tokens=out_tok, channel="website",
     )
 
 
-def _create_demo_lead(request, message):
+def _create_demo_lead(request, workspace, message):
     """
     Landing page demo-chatida xarid niyati aniqlansa, guruhdagi kabi
     (userbot/handlers.py'dagi create_group_lead) — bosqichma-bosqich ism/
@@ -73,6 +99,7 @@ def _create_demo_lead(request, message):
     o'zi bog'lanishi uchun.
     """
     Lead.objects.create(
+        workspace=workspace,
         telegram_user_id=get_pseudo_user_id(get_client_ip(request)),
         full_name="", phone="", message=message, channel="website",
     )
@@ -89,6 +116,10 @@ def demo_voice(request):
     if is_rate_limited(request):
         return JsonResponse({"error": str(RATE_LIMIT_MESSAGE)}, status=429)
 
+    workspace = Workspace.main()
+    if workspace is None:
+        return JsonResponse({"error": str(DEMO_UNAVAILABLE_MESSAGE)}, status=503)
+
     audio_file = request.FILES.get("audio")
     if not audio_file:
         return JsonResponse({"error": _("Audio fayl topilmadi.")}, status=400)
@@ -100,11 +131,11 @@ def demo_voice(request):
         return JsonResponse({"error": _("Ovozli xabarni tushuna olmadim. Yana urinib ko'ring.")}, status=422)
 
     answer, in_tok, out_tok, answered_by_ai, wants_lead = answer_question(
-        question, channel="website", history=None,
+        workspace, question, channel="website", history=None,
     )
-    _log_demo_conversation(request, question, answer, answered_by_ai, in_tok, out_tok)
+    _log_demo_conversation(request, workspace, question, answer, answered_by_ai, in_tok, out_tok)
     if wants_lead:
-        _create_demo_lead(request, question)
+        _create_demo_lead(request, workspace, question)
     return JsonResponse({"question": question, "answer": answer or str(_("Kechirasiz, hozircha javob bera olmadim."))})
 
 
@@ -114,6 +145,10 @@ def demo_chat(request):
     shu `answer_question` orqali, JS tomonda saqlangan tarix bilan."""
     if is_rate_limited(request):
         return JsonResponse({"error": str(RATE_LIMIT_MESSAGE)}, status=429)
+
+    workspace = Workspace.main()
+    if workspace is None:
+        return JsonResponse({"error": str(DEMO_UNAVAILABLE_MESSAGE)}, status=503)
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -132,9 +167,9 @@ def demo_chat(request):
     ]
 
     answer, in_tok, out_tok, answered_by_ai, wants_lead = answer_question(
-        message, channel="website", history=history,
+        workspace, message, channel="website", history=history,
     )
-    _log_demo_conversation(request, message, answer, answered_by_ai, in_tok, out_tok)
+    _log_demo_conversation(request, workspace, message, answer, answered_by_ai, in_tok, out_tok)
     if wants_lead:
-        _create_demo_lead(request, message)
+        _create_demo_lead(request, workspace, message)
     return JsonResponse({"answer": answer or str(_("Kechirasiz, hozircha javob bera olmadim."))})

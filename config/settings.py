@@ -161,6 +161,14 @@ AVAILABLE_LLM_MODELS = [
     ("gemini-2.5-pro", "Gemini 2.5 Pro (eng aniq, qimmatroq)"),
 ]
 
+# ---- Obuna tariflari ----
+# Bepul tarifda (ro'yxatdan o'tgan har bir yangi foydalanuvchi) jami nechta savolga AI javob beradi.
+FREE_PLAN_QUESTION_LIMIT = int(os.getenv("FREE_PLAN_QUESTION_LIMIT", "20"))
+# Pro obuna olish uchun murojaat qilinadigan Telegram username (@ belgisiz).
+SUPPORT_TELEGRAM_USERNAME = os.getenv("SUPPORT_TELEGRAM_USERNAME", "n_saidakbar")
+PRO_REQUEST_MESSAGE = "Salom, pro obuna olmoqchiman"
+PRO_PLAN_PRICE = os.getenv("PRO_PLAN_PRICE", "$59")
+
 # ---- Super admin bilan ichki aloqa uchun ----
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "")
 

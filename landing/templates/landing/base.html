@@ -22,7 +22,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="{% static 'landing/style.css' %}?v=7" rel="stylesheet">
+    <link href="{% static 'landing/style.css' %}?v=8" rel="stylesheet">
 </head>
 <body class="landing">
 <header class="landing-header">
@@ -41,7 +41,13 @@
             <a href="#tariffs">{% trans "Tariflar" %}</a>
             <a href="#portfolio">{% trans "Ishlarimiz" %}</a>
             <a href="#testimonials">{% trans "Mijozlar fikri" %}</a>
-            <a href="#contact" class="landing-nav-cta">{% trans "Bog'lanish" %}</a>
+            <a href="#contact">{% trans "Bog'lanish" %}</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'assistant:dashboard' %}" class="landing-nav-cta">{% trans "Panel" %}</a>
+            {% else %}
+                <a href="{% url 'assistant:login' %}" class="landing-nav-auth">{% trans "Kirish" %}</a>
+                <a href="{% url 'landing:register' %}" class="landing-nav-cta">{% trans "Ro'yxatdan o'tish" %}</a>
+            {% endif %}
         </nav>
         <div class="landing-actions">
             <button type="button" class="theme-toggle-btn" data-theme-toggle title="{% trans "Kun/tun rejimi" %}">🌙</button>
@@ -68,7 +74,12 @@
                     </form>
                 </div>
             </div>
-            <a href="#contact" class="btn btn-primary btn-sm landing-cta-desktop">{% trans "Bog'lanish" %}</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'assistant:dashboard' %}" class="btn btn-primary btn-sm landing-cta-desktop">{% trans "Panel" %}</a>
+            {% else %}
+                <a href="{% url 'assistant:login' %}" class="btn btn-outline btn-sm landing-cta-desktop">{% trans "Kirish" %}</a>
+                <a href="{% url 'landing:register' %}" class="btn btn-primary btn-sm landing-cta-desktop">{% trans "Ro'yxatdan o'tish" %}</a>
+            {% endif %}
             <button type="button" class="landing-menu-btn" data-landing-menu-toggle aria-label="{% trans 'Menyu' %}" aria-expanded="false">
                 <span></span><span></span><span></span>
             </button>

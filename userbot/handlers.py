@@ -242,14 +242,14 @@ async def _mark_read(event) -> None:
 
 
 @sync_to_async
-def ask_ai(question: str, user_id: int):
-    from assistant.models import ConversationLog
+def ask_ai(workspace_id: int, question: str, user_id: int):
+    from assistant.models import ConversationLog, Workspace
     from assistant.services.rag import answer_question
 
     # Oxirgi 10 ta savol-javobni (kamida 10 ta "tepadagi yozilgan" xabarni) olib,
     # AI kontekstiga va xarid niyatini aniqlashga beramiz.
     recent = list(
-        ConversationLog.objects.filter(telegram_user_id=user_id, channel="userbot")
+        ConversationLog.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id, channel="userbot")
         .order_by("-created_at")[:10]
     )
     recent.reverse()  # eskidan yangiga
@@ -258,11 +258,12 @@ def ask_ai(question: str, user_id: int):
         history.append({"role": "user", "content": log.question})
         history.append({"role": "assistant", "content": log.answer})
 
-    return answer_question(question, channel="userbot", history=history)
+    workspace = Workspace.objects.get(pk=workspace_id)
+    return answer_question(workspace, question, channel="userbot", history=history)
 
 
 @sync_to_async
-def ask_ai_group(question: str, user_id: int, chat_id: int):
+def ask_ai_group(workspace_id: int, question: str, user_id: int, chat_id: int):
     """
     Guruh uchun ham endi shaxsiy tarix (history) beriladi — lekin FAQAT shu
     foydalanuvchining O'ZI shu GURUHDA yozgan oxirgi xabarlari (boshqa
@@ -270,11 +271,13 @@ def ask_ai_group(question: str, user_id: int, chat_id: int):
     guruhda bo'lsa, guruhlar tarixi ham bir-biriga aralashmaydi — chat_id
     bo'yicha alohida ajratiladi).
     """
-    from assistant.models import ConversationLog
+    from assistant.models import ConversationLog, Workspace
     from assistant.services.rag import answer_question
 
     recent = list(
-        ConversationLog.objects.filter(telegram_user_id=user_id, channel="group", chat_id=chat_id)
+        ConversationLog.objects.filter(
+            workspace_id=workspace_id, telegram_user_id=user_id, channel="group", chat_id=chat_id,
+        )
         .order_by("-created_at")[:10]
     )
     recent.reverse()
@@ -283,11 +286,12 @@ def ask_ai_group(question: str, user_id: int, chat_id: int):
         history.append({"role": "user", "content": log.question})
         history.append({"role": "assistant", "content": log.answer})
 
-    return answer_question(question, channel="group", history=history)
+    workspace = Workspace.objects.get(pk=workspace_id)
+    return answer_question(workspace, question, channel="group", history=history)
 
 
 @sync_to_async
-def create_group_lead(user_id, username, full_name, message):
+def create_group_lead(workspace_id, user_id, username, full_name, message):
     """
     Guruhda xarid niyati aniqlansa, DM'dagidek bosqichma-bosqich ism/telefon
     so'ralmaydi (guruh ichida notanish odamdan so'rash noqulay) — buning
@@ -296,6 +300,7 @@ def create_group_lead(user_id, username, full_name, message):
     """
     from assistant.models import Lead
     Lead.objects.create(
+        workspace_id=workspace_id,
         telegram_user_id=user_id,
         telegram_username=username or "",
         full_name=full_name or "",
@@ -312,10 +317,10 @@ def transcribe_voice(audio_bytes: bytes, mime_type: str):
 
 
 @sync_to_async
-def log_conversation(user_id, question, answer, answered_by_ai, in_tok=0, out_tok=0, channel="userbot", chat_id=None):
+def log_conversation(workspace_id, user_id, question, answer, answered_by_ai, in_tok=0, out_tok=0, channel="userbot", chat_id=None):
     from assistant.models import ConversationLog
     ConversationLog.objects.create(
-        telegram_user_id=user_id, question=question, answer=answer,
+        workspace_id=workspace_id, telegram_user_id=user_id, question=question, answer=answer,
         answered_by_ai=answered_by_ai, input_tokens=in_tok, output_tokens=out_tok,
         channel=channel, chat_id=chat_id,
     )
@@ -338,13 +343,13 @@ async def _is_reply_to_bot(event) -> bool:
 
 
 @sync_to_async
-def get_pending_lead(user_id):
+def get_pending_lead(workspace_id, user_id):
     from assistant.models import PendingLead
-    return PendingLead.objects.filter(telegram_user_id=user_id).first()
+    return PendingLead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).first()
 
 
 @sync_to_async
-def has_existing_lead(user_id):
+def has_existing_lead(workspace_id, user_id):
     """
     Shu foydalanuvchidan avval kamida bitta Lead (ariza) qabul qilinganmi,
     tekshiradi. MUHIM: bitta odamdan faqat BITTA marta ariza olinishi kerak —
@@ -354,13 +359,14 @@ def has_existing_lead(user_id):
     collection orqali), qayta-qayta yangi PendingLead/Lead ochilib ketardi.
     """
     from assistant.models import Lead
-    return Lead.objects.filter(telegram_user_id=user_id).exists()
+    return Lead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).exists()
 
 
 @sync_to_async
-def start_pending_lead(user_id, username, original_message):
+def start_pending_lead(workspace_id, user_id, username, original_message):
     from assistant.models import PendingLead
     PendingLead.objects.update_or_create(
+        workspace_id=workspace_id,
         telegram_user_id=user_id,
         defaults={"telegram_username": username or "", "original_message": original_message, "step": "name"},
     )
@@ -376,6 +382,7 @@ def advance_pending_lead_to_phone(pending_id, full_name):
 def finalize_pending_lead(pending):
     from assistant.models import Lead, PendingLead
     Lead.objects.create(
+        workspace_id=pending.workspace_id,
         telegram_user_id=pending.telegram_user_id,
         telegram_username=pending.telegram_username,
         full_name=pending.full_name,
@@ -390,6 +397,7 @@ def finalize_pending_lead(pending):
 def finalize_pending_lead_with_phone(pending, phone):
     from assistant.models import Lead, PendingLead
     Lead.objects.create(
+        workspace_id=pending.workspace_id,
         telegram_user_id=pending.telegram_user_id,
         telegram_username=pending.telegram_username,
         full_name=pending.full_name,
@@ -409,6 +417,7 @@ def finalize_pending_lead_combined(pending, full_name, phone):
     """
     from assistant.models import Lead, PendingLead
     Lead.objects.create(
+        workspace_id=pending.workspace_id,
         telegram_user_id=pending.telegram_user_id,
         telegram_username=pending.telegram_username,
         full_name=full_name,
@@ -420,10 +429,10 @@ def finalize_pending_lead_combined(pending, full_name, phone):
 
 
 @sync_to_async
-def get_or_create_group(chat_id: int, title: str):
+def get_or_create_group(workspace_id: int, chat_id: int, title: str):
     from assistant.models import TelegramGroup
     group, created = TelegramGroup.objects.get_or_create(
-        chat_id=chat_id, defaults={"title": title or ""},
+        workspace_id=workspace_id, chat_id=chat_id, defaults={"title": title or ""},
     )
     if not created:
         update_fields = ["last_seen_at"]
@@ -435,12 +444,14 @@ def get_or_create_group(chat_id: int, title: str):
 
 
 @sync_to_async
-def get_group_trigger_keywords():
-    from assistant.models import BotConfig
-    return BotConfig.get_solo().group_trigger_list
+def get_group_trigger_keywords(workspace_id: int):
+    from assistant.models import Workspace
+    return Workspace.objects.get(pk=workspace_id).config.group_trigger_list
 
 
-def register_handlers(client):
+def register_handlers(client, workspace_id: int):
+    """Handlerlarni shu Telegram akkaunt tegishli bo'lgan ish maydoni (workspace_id) uchun ro'yxatga oladi —
+    barcha arizalar, suhbatlar va guruhlar shu ish maydoniga yoziladi."""
 
     @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private))
     async def handle_message(event):
@@ -487,7 +498,7 @@ def register_handlers(client):
 
             username = getattr(sender, "username", None)
 
-            pending = await get_pending_lead(user_id)
+            pending = await get_pending_lead(workspace_id, user_id)
 
             if pending and pending.step == "name":
                 from assistant.services.rag import is_identity_question, OPERATOR_IDENTITY_RESPONSE
@@ -537,9 +548,9 @@ def register_handlers(client):
                 return
 
             # Oddiy savol — RAG orqali javob
-            answer, in_tok, out_tok, answered_by_ai, wants_lead = await ask_ai(text, user_id)
+            answer, in_tok, out_tok, answered_by_ai, wants_lead = await ask_ai(workspace_id, text, user_id)
 
-            await log_conversation(user_id, text, answer or "", answered_by_ai, in_tok, out_tok)
+            await log_conversation(workspace_id, user_id, text, answer or "", answered_by_ai, in_tok, out_tok)
 
             # MUHIM: agar Vertex AI barcha qayta urinishlardan keyin ham xatolik
             # bergan bo'lsa, rag.answer_question answer=None qaytaradi — bunday
@@ -557,9 +568,9 @@ def register_handlers(client):
             # ishlamay qolgan taqdirda ham, foydalanuvchi xarid niyatini bildirgan bo'lsa,
             # ariza baribir yig'iladi (bu kalit so'zga asoslangan, AI'siz mantiq).
             if wants_lead and not pending:
-                already_has_lead = await has_existing_lead(user_id)
+                already_has_lead = await has_existing_lead(workspace_id, user_id)
                 if not already_has_lead:
-                    await start_pending_lead(user_id, username, original_message=text)
+                    await start_pending_lead(workspace_id, user_id, username, original_message=text)
                     await _send_message(event, "Bu bilan qiziqsangiz, ismingizni yozing — operatorimiz siz bilan bog'lanadi:")
                     sent_any = True
 
@@ -584,14 +595,14 @@ def register_handlers(client):
         # admin panel > Guruhlar sahifasida shu yerda ko'rinadi.
         chat = await event.get_chat()
         title = getattr(chat, "title", "") or ""
-        group = await get_or_create_group(event.chat_id, title)
+        group = await get_or_create_group(workspace_id, event.chat_id, title)
 
         if not group.is_ai_enabled:
             return
 
         question = text
         if group.reply_mode == "keyword" and not await _is_reply_to_bot(event):
-            keywords = await get_group_trigger_keywords()
+            keywords = await get_group_trigger_keywords(workspace_id)
             if not _group_message_matches_keyword(text, keywords):
                 return
             question = _strip_leading_trigger(text, keywords) or text
@@ -612,10 +623,10 @@ def register_handlers(client):
         # yozishmadagi bilan bir xil mantiq (handle_message'dagi izohga qarang).
         user_id = event.sender_id
         async with event.client.action(event.chat_id, "typing"):
-            answer, in_tok, out_tok, answered_by_ai, wants_lead = await ask_ai_group(question, user_id, event.chat_id)
+            answer, in_tok, out_tok, answered_by_ai, wants_lead = await ask_ai_group(workspace_id, question, user_id, event.chat_id)
 
             await log_conversation(
-                user_id, question, answer or "", answered_by_ai, in_tok, out_tok,
+                workspace_id, user_id, question, answer or "", answered_by_ai, in_tok, out_tok,
                 channel="group", chat_id=event.chat_id,
             )
 
@@ -628,7 +639,7 @@ def register_handlers(client):
                 full_name = " ".join(
                     filter(None, [getattr(sender, "first_name", None), getattr(sender, "last_name", None)])
                 ).strip()
-                await create_group_lead(user_id, username, full_name, question)
+                await create_group_lead(workspace_id, user_id, username, full_name, question)
 
             # MUHIM: guruhda ham xuddi shaxsiy yozishmadagidek — AI barcha qayta
             # urinishlardan keyin ham xatolik bersa, HECH QANDAY xabar yuborilmaydi
