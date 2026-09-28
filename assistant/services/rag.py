@@ -140,8 +140,35 @@ def detect_buying_intent(question: str, config: BotConfig) -> bool:
     return any(_normalize_uz(keyword) in t for keyword in config.lead_trigger_list)
 
 
+# Shaxsiy yozishmalarda (userbot) ariza yig'ishni AI o'zi, tabiiy suhbat orqali olib boradi —
+# qat'iy "ism -> telefon" bosqichlari yo'q. Mijozning ariza holatiga qarab promptga qo'shimcha
+# ko'rsatma qo'shiladi (lead_state):
+#   "none"      — hali ariza yo'q: qiziqsa ism/telefonni bir marta so'rash, rad etsa qistamaslik;
+#   "new"       — mijoz shu xabarda raqamini qoldirdi (ariza saqlandi): minnatdorchilik bildirish;
+#   "collected" — ariza avvalroq olingan: ism/telefonni QAYTA so'ramaslik.
+LEAD_INSTRUCTIONS = {
+    "none": (
+        "\n\nAriza yig'ish: agar mijoz xizmat yoki mahsulotni olish, buyurtma berish yoki narxga qiziqsa, "
+        "tabiiy tarzda ismi va telefon raqamini so'rang — faqat bir marta. Mijoz \"kerak emas\", "
+        "\"keyinroq\", \"otmen\" desa yoki rad etsa, qistamang va suhbatni odatdagidek davom ettiring. "
+        "Telefon raqami formatini tekshirmang va to'g'rilamang."
+    ),
+    "new": (
+        "\n\nMUHIM: Mijoz hozirgina telefon raqamini qoldirdi — arizasi saqlandi. Qisqa va iliq "
+        "minnatdorchilik bildiring va operator tez orada bog'lanishini ayting. Ism yoki raqamni qayta "
+        "so'ramang va raqam formatini tekshirmang."
+    ),
+    "collected": (
+        "\n\nMUHIM: Bu mijoz allaqachon ismi va telefon raqamini qoldirgan — arizasi qabul qilingan, "
+        "operator u bilan bog'lanadi. Ism yoki telefon raqamini QAYTA SO'RAMANG. \"Ok\", \"rahmat\", "
+        "\"xo'p\" kabi xabarlarga qisqa va iliq javob bering, boshqa savollariga odatdagidek javob bering."
+    ),
+}
+
+
 def answer_question(
     workspace: Workspace, question: str, channel: str = "userbot", history: list[dict] | None = None,
+    lead_state: str | None = None,
 ):
     """
     Qaytaradi: (javob, input_token, output_token, ai_javob_berdimi: bool, ariza_kerakmi: bool)
@@ -194,8 +221,9 @@ def answer_question(
         if not context.strip():
             return config.fallback_message, 0, 0, False, wants_lead
 
+        system_prompt = config.system_prompt + LEAD_INSTRUCTIONS.get(lead_state, "")
         answer, in_tok, out_tok = generate_answer(
-            config.system_prompt, context, question, history, model_name=subscription.llm_model
+            system_prompt, context, question, history, model_name=subscription.llm_model
         )
     except Exception as exc:  # noqa: BLE001 - barcha urinishlar tugagach shu yerga tushadi
         logger.exception(

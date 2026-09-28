@@ -2,9 +2,10 @@
 Telethon (Telegram AKKAUNT) uchun xabar handlerlari.
 Django ORM sinxron bo'lgani uchun barcha chaqiruvlar sync_to_async orqali bajariladi.
 
-Ariza (lead) bosqichma-bosqich yig'ilishi uchun bazada saqlanadigan
-PendingLead modelidan foydalaniladi (Telethon'da FSM mexanizmi bo'lmagani
-uchun DB-based holat mashinasi ishlatiladi).
+Shaxsiy yozishmalarda ariza (lead) yig'ishni AI tabiiy suhbat orqali olib boradi
+(qat'iy "ism -> telefon" bosqichlari yo'q): mijoz xabarida telefon raqami bo'lsa,
+ariza avtomatik saqlanadi (save_lead_from_chat), AI esa ariza holatiga qarab
+(rag.LEAD_INSTRUCTIONS) raqam so'raydi, minnatdorchilik bildiradi yoki qayta so'ramaydi.
 
 Guruh (group chat) qo'llab-quvvatlashi: shaxsiy yozishmalardan farqli
 o'laroq, guruhda AI faqat administrator shu guruhni yoqib qo'ygan va
@@ -63,6 +64,14 @@ _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 # umumiy javob "juda sekin" bo'lib qolardi. Oshirilgach, bo'laklar soni
 # kamayadi (Telegram xabar chegarasi — 4096 belgi, bundan hali ham ancha uzoq).
 _MAX_MESSAGE_LEN = 700
+
+# Mijoz xabaridagi telefon raqami: formati TEKSHIRILMAYDI (mijoz qanday yozsa, shunday saqlanadi) —
+# faqat kamida 9 ta raqamdan iborat ketma-ketlik telefon deb olinadi ("2 ta olaman", "500 000" emas).
+_PHONE_IN_TEXT_RE = re.compile(r"\+?\d[\d\s\-()]{7,}\d")
+_MIN_PHONE_DIGITS = 9
+_CURRENCY_AFTER_RE = re.compile(r"^\s*(so'?m|sum|сум|\$|usd|dollar|ming|mln|million)", re.I)
+# Ism sifatida olinmaydigan so'zlar ("mana raqamim", "telefonim" kabi qoldiqlar)
+_NOT_NAME_WORDS = {"raqam", "raqamim", "nomer", "nomerim", "telefon", "telefonim", "tel", "mana", "shu", "bu"}
 
 
 def _clean_name(text: str) -> str:
@@ -225,8 +234,8 @@ async def _mark_read(event) -> None:
 
 
 @sync_to_async
-def ask_ai(workspace_id: int, question: str, user_id: int):
-    from assistant.models import ConversationLog, Workspace
+def ask_ai(workspace_id: int, question: str, user_id: int, lead_just_saved: bool = False):
+    from assistant.models import ConversationLog, Lead, Workspace
     from assistant.services.rag import answer_question
 
     # Oxirgi 10 ta savol-javobni (kamida 10 ta "tepadagi yozilgan" xabarni) olib,
@@ -241,8 +250,15 @@ def ask_ai(workspace_id: int, question: str, user_id: int):
         history.append({"role": "user", "content": log.question})
         history.append({"role": "assistant", "content": log.answer})
 
+    if lead_just_saved:
+        lead_state = "new"
+    elif Lead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).exclude(phone="").exists():
+        lead_state = "collected"
+    else:
+        lead_state = "none"
+
     workspace = Workspace.objects.get(pk=workspace_id)
-    return answer_question(workspace, question, channel="userbot", history=history)
+    return answer_question(workspace, question, channel="userbot", history=history, lead_state=lead_state)
 
 
 @sync_to_async
@@ -325,90 +341,71 @@ async def _is_reply_to_bot(event) -> bool:
     return bool(replied and replied.out)
 
 
-@sync_to_async
-def get_pending_lead(workspace_id, user_id):
-    from assistant.models import PendingLead
-    return PendingLead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).first()
+def _find_phone(text: str):
+    """Matndagi telefon raqamini (yozilganidek) va uning joylashuvini qaytaradi, bo'lmasa (None, None)."""
+    for match in _PHONE_IN_TEXT_RE.finditer(text):
+        digits = sum(ch.isdigit() for ch in match.group(0))
+        if digits >= _MIN_PHONE_DIGITS and not _CURRENCY_AFTER_RE.match(text[match.end():]):
+            return match.group(0).strip(), match
+    return None, None
+
+
+def _looks_like_name(text: str) -> bool:
+    words = text.split()
+    return (
+        1 <= len(words) <= 4 and len(text) <= 60 and "?" not in text
+        and any(ch.isalpha() for ch in text) and not any(ch.isdigit() for ch in text)
+        and not any(_normalize_token(word) in _NOT_NAME_WORDS for word in words)
+    )
 
 
 @sync_to_async
-def has_existing_lead(workspace_id, user_id):
+def save_lead_from_chat(workspace_id, user_id, username, profile_name, text) -> bool:
     """
-    Shu foydalanuvchidan avval kamida bitta Lead (ariza) qabul qilinganmi,
-    tekshiradi. MUHIM: bitta odamdan faqat BITTA marta ariza olinishi kerak —
-    aks holda, ariza muvaffaqiyatli yakunlangandan keyin foydalanuvchi
-    "Ok"/"Rahmat" kabi oddiy javob yozganda ham, AI javobi tasodifan
-    "ism"/"telefon" so'zlarini o'z ichiga olib qolsa (answer_implies_contact_
-    collection orqali), qayta-qayta yangi PendingLead/Lead ochilib ketardi.
+    Mijoz xabarida telefon raqami bo'lsa, arizani saqlaydi (raqam formati tekshirilmaydi).
+    Ism: shu xabardagi qolgan matn ("Ali +99890...") yoki oldingi xabari (AI ism so'raganda
+    yozgan "Saidakbar") yoki Telegram profilidagi ism. Arizaga mijozning oxirgi xabarlari
+    (nimaga qiziqqani) yoziladi. Yangi ariza saqlansa True qaytaradi.
     """
-    from assistant.models import Lead
-    return Lead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).exists()
+    from assistant.models import ConversationLog, Lead
 
+    phone, match = _find_phone(text)
+    if not phone:
+        return False
 
-@sync_to_async
-def start_pending_lead(workspace_id, user_id, username, original_message):
-    from assistant.models import PendingLead
-    PendingLead.objects.update_or_create(
+    existing = Lead.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id).order_by("-created_at").first()
+    if existing and existing.phone:
+        return False  # to'liq ariza allaqachon bor — ikkinchisi ochilmaydi
+
+    recent_questions = list(
+        ConversationLog.objects.filter(workspace_id=workspace_id, telegram_user_id=user_id, channel="userbot")
+        .order_by("-created_at").values_list("question", flat=True)[:5]
+    )
+    remainder = _clean_name((text[:match.start()] + text[match.end():]).strip(_PUNCT_STRIP + " "))
+    if remainder and _looks_like_name(remainder):
+        full_name = remainder
+    elif recent_questions and _looks_like_name(_clean_name(recent_questions[0])):
+        full_name = _clean_name(recent_questions[0])
+    else:
+        full_name = profile_name or ""
+
+    if existing:  # masalan guruhdan telefonsiz yozilgan ariza — raqam bilan to'ldiramiz
+        existing.phone = phone
+        existing.full_name = existing.full_name or full_name
+        existing.save(update_fields=["phone", "full_name", "updated_at"])
+        return True
+
+    conversation = " | ".join(reversed(recent_questions)) or text
+    Lead.objects.create(
         workspace_id=workspace_id,
         telegram_user_id=user_id,
-        defaults={"telegram_username": username or "", "original_message": original_message, "step": "name"},
-    )
-
-
-@sync_to_async
-def advance_pending_lead_to_phone(pending_id, full_name):
-    from assistant.models import PendingLead
-    PendingLead.objects.filter(pk=pending_id).update(full_name=full_name, step="phone")
-
-
-@sync_to_async
-def finalize_pending_lead(pending):
-    from assistant.models import Lead, PendingLead
-    Lead.objects.create(
-        workspace_id=pending.workspace_id,
-        telegram_user_id=pending.telegram_user_id,
-        telegram_username=pending.telegram_username,
-        full_name=pending.full_name,
-        phone="",  # quyida to'ldiriladi (chaqiruvchi joyida)
-        message=pending.original_message,
-        channel="userbot",
-    )
-    PendingLead.objects.filter(pk=pending.pk).delete()
-
-
-@sync_to_async
-def finalize_pending_lead_with_phone(pending, phone):
-    from assistant.models import Lead, PendingLead
-    Lead.objects.create(
-        workspace_id=pending.workspace_id,
-        telegram_user_id=pending.telegram_user_id,
-        telegram_username=pending.telegram_username,
-        full_name=pending.full_name,
-        phone=phone,
-        message=pending.original_message,
-        channel="userbot",
-    )
-    PendingLead.objects.filter(pk=pending.pk).delete()
-
-
-@sync_to_async
-def finalize_pending_lead_combined(pending, full_name, phone):
-    """
-    Foydalanuvchi ism va telefonni BITTA xabarda yuborganda ("name"
-    bosqichida) ishlatiladi — alohida "phone" bosqichiga o'tmasdan,
-    to'g'ridan-to'g'ri Lead yaratib, PendingLead'ni yakunlaydi.
-    """
-    from assistant.models import Lead, PendingLead
-    Lead.objects.create(
-        workspace_id=pending.workspace_id,
-        telegram_user_id=pending.telegram_user_id,
-        telegram_username=pending.telegram_username,
+        telegram_username=username or "",
         full_name=full_name,
         phone=phone,
-        message=pending.original_message,
+        message=conversation[:1000],
         channel="userbot",
     )
-    PendingLead.objects.filter(pk=pending.pk).delete()
+    return True
 
 
 @sync_to_async
@@ -479,59 +476,19 @@ def register_handlers(client, workspace_id: int):
                     await _mark_read(event)
                     return
 
+            # MUHIM: ariza yig'ish endi qat'iy "ism -> telefon" bosqichlari bilan emas, AI'ning
+            # tabiiy suhbati orqali bo'ladi (avval "Okey" desa ham ism so'rab qolardi, "kerak emas"ni
+            # tushunmasdi, raqam formatini qattiq tekshirardi). Mijoz xabarida telefon raqami bo'lsa,
+            # ariza avtomatik saqlanadi va AI'ga "raqam olindi, rahmat ayt" ko'rsatmasi beriladi.
             username = getattr(sender, "username", None)
+            profile_name = " ".join(
+                filter(None, [getattr(sender, "first_name", None), getattr(sender, "last_name", None)])
+            ).strip()
+            lead_just_saved = await save_lead_from_chat(workspace_id, user_id, username, profile_name, text)
 
-            pending = await get_pending_lead(workspace_id, user_id)
-
-            if pending and pending.step == "name":
-                from assistant.services.rag import is_identity_question, OPERATOR_IDENTITY_RESPONSE
-
-                # Foydalanuvchi ism o'rniga "siz kimsiz?" kabi savol yozsa, buni
-                # ism sifatida qabul qilib olmaymiz — operator javobini berib,
-                # ismni yana so'raymiz (aks holda arizada "Siz kimsiz" degan
-                # chalkash ism saqlanib qolar edi).
-                if is_identity_question(text):
-                    await _send_message(event, OPERATOR_IDENTITY_RESPONSE)
-                    await _send_message(event, "Ismingizni yozib qoldirasizmi?")
-                    await _mark_read(event)
-                    return
-
-                # Foydalanuvchi ism va telefonni bitta xabarda yuborgan bo'lishi
-                # mumkin (masalan "Saidakbar +998910010101") — real suhbatda bu
-                # holat kuzatilgan. Bunday bo'lsa, alohida "phone" bosqichiga
-                # o'tmasdan, to'g'ridan-to'g'ri arizani yakunlaymiz.
-                combined_name, combined_phone = _try_extract_name_and_phone(text)
-                if combined_name and combined_phone:
-                    await finalize_pending_lead_combined(pending, combined_name, combined_phone)
-                    await _send_message(event, "Rahmat! Arizangiz qabul qilindi, tez orada siz bilan bog'lanamiz.")
-                    await _mark_read(event)
-                    return
-
-                full_name = _clean_name(text)
-                await advance_pending_lead_to_phone(pending.pk, full_name=full_name)
-                await _send_message(
-                    event, "Rahmat! Endi telefon raqamingizni yozing (masalan: +998901234567):"
-                )
-                await _mark_read(event)
-                return
-
-            if pending and pending.step == "phone":
-                phone = _extract_phone(text)
-                if not phone:
-                    await _send_message(
-                        event,
-                        "Kechirasiz, telefon raqamini to'g'ri kiritmadingiz. "
-                        "Iltimos, faqat raqamlar bilan yozing, masalan: +998901234567",
-                    )
-                    await _mark_read(event)
-                    return
-                await finalize_pending_lead_with_phone(pending, phone=phone)
-                await _send_message(event, "Rahmat! Arizangiz qabul qilindi, tez orada siz bilan bog'lanamiz.")
-                await _mark_read(event)
-                return
-
-            # Oddiy savol — RAG orqali javob
-            answer, in_tok, out_tok, answered_by_ai, wants_lead = await ask_ai(workspace_id, text, user_id)
+            answer, in_tok, out_tok, answered_by_ai, _wants_lead = await ask_ai(
+                workspace_id, text, user_id, lead_just_saved,
+            )
 
             await log_conversation(workspace_id, user_id, text, answer or "", answered_by_ai, in_tok, out_tok)
 
@@ -541,23 +498,8 @@ def register_handlers(client, workspace_id: int):
             # xabar ham) yuborilmaydi, bot jim qoladi — VA xabar ATAYIN
             # o'qilmagan holda qoldiriladi (mark_read chaqirilmaydi), shunda
             # operator qaysi savolga AI javob berolmaganini darhol ko'radi.
-            sent_any = False
             if answer:
                 await _send_message(event, answer)
-                sent_any = True
-
-            # MUHIM: wants_lead endi answered_by_ai'dan mustaqil tekshiriladi — hujjatda
-            # mos ma'lumot topilmagan (masalan narx haqida hujjat yo'q) yoki AI umuman
-            # ishlamay qolgan taqdirda ham, foydalanuvchi xarid niyatini bildirgan bo'lsa,
-            # ariza baribir yig'iladi (bu kalit so'zga asoslangan, AI'siz mantiq).
-            if wants_lead and not pending:
-                already_has_lead = await has_existing_lead(workspace_id, user_id)
-                if not already_has_lead:
-                    await start_pending_lead(workspace_id, user_id, username, original_message=text)
-                    await _send_message(event, "Bu bilan qiziqsangiz, ismingizni yozing — operatorimiz siz bilan bog'lanadi:")
-                    sent_any = True
-
-            if sent_any:
                 await _mark_read(event)
 
     @client.on(events.NewMessage(incoming=True, func=lambda e: e.is_group))
