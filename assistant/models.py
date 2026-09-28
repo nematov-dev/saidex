@@ -155,7 +155,7 @@ class BotConfig(models.Model):
     fallback_message = models.TextField(
         default="Kechirasiz, bu savolga hozircha javob bera olmayman. "
                 "Arizangizni qoldiring, operatorimiz siz bilan bog'lanadi.",
-        help_text="Texnik xabar — AI o'chirilganda yoki mos hujjat topilmaganda ishlatiladi. "
+        help_text="Texnik xabar — mos hujjat topilmaganda ishlatiladi (AI o'chirilganda bot umuman jim qoladi). "
                   "Kamdan-kam o'zgartiriladi, Django admin orqali tahrirlanadi.",
     )
     lead_trigger_keywords = models.TextField(

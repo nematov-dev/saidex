@@ -199,7 +199,10 @@ def answer_question(
 
     config = workspace.config
     if not config.ai_enabled:
-        return config.fallback_message, 0, 0, False, False
+        # MUHIM: AI o'chirilgan bo'lsa bot butunlay JIM qoladi — avval fallback_message
+        # ("Kechirasiz, bu savolga javob bera olmayman...") yuborilardi, lekin admin AI'ni
+        # o'chirganda hech narsa yozilmasligini (o'zi javob berishini) kutadi.
+        return None, 0, 0, False, False
 
     wants_lead = detect_buying_intent(question, config)
 

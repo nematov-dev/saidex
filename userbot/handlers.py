@@ -409,6 +409,15 @@ def save_lead_from_chat(workspace_id, user_id, username, profile_name, text) -> 
 
 
 @sync_to_async
+def is_ai_active(workspace_id: int) -> bool:
+    """AI yoqilganmi va obuna faolmi. Yo'q bo'lsa bot hech narsa qilmaydi: javob ham,
+    "yozmoqda..." ham, ovozli xabarni matnga o'girish ham, o'qildi belgisi ham yo'q."""
+    from assistant.models import Workspace
+    workspace = Workspace.objects.get(pk=workspace_id)
+    return workspace.config.ai_enabled and workspace.subscription.is_service_active
+
+
+@sync_to_async
 def get_or_create_group(workspace_id: int, chat_id: int, title: str):
     from assistant.models import TelegramGroup
     group, created = TelegramGroup.objects.get_or_create(
@@ -454,6 +463,9 @@ def register_handlers(client, workspace_id: int):
             text = (event.raw_text or "").strip()
             if not text:
                 return
+
+        if not await is_ai_active(workspace_id):
+            return
 
         # MUHIM: "yozmoqda..." indikatori endi FAQAT AI javob tayyorlashda
         # emas, balki javob to'liq YUBORILGUNCHA (shu jumladan _send_message
@@ -522,7 +534,7 @@ def register_handlers(client, workspace_id: int):
         title = getattr(chat, "title", "") or ""
         group = await get_or_create_group(workspace_id, event.chat_id, title)
 
-        if not group.is_ai_enabled:
+        if not group.is_ai_enabled or not await is_ai_active(workspace_id):
             return
 
         question = text
