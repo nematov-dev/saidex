@@ -1,0 +1,29 @@
+{% extends "assistant/base.html" %}
+{% load i18n %}
+{% block content %}
+<a href="{% url list_url_name %}" class="small">&larr; {% trans "Ortga" %}</a>
+<h3 class="mt-1 mb-4">{{ title }}</h3>
+
+<div class="card stat-card p-4">
+    <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        {% for field in form %}
+            {% if field.name == "is_active" %}
+                <div class="col-12">
+                    <label class="form-check-label d-flex gap-2 align-items-center">{{ field }} {% trans "Saytda ko'rinsin" %}</label>
+                </div>
+            {% else %}
+                <div class="{% if field.name|slice:'-3:' == '_ru' or field.name|slice:'-3:' == '_en' %}col-md-6{% else %}col-12{% endif %}">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-dark" type="submit">{% trans "Saqlash" %}</button>
+            <a href="{% url list_url_name %}" class="btn btn-outline-secondary">{% trans "Bekor qilish" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

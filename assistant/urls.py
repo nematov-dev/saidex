@@ -50,8 +50,10 @@ urlpatterns = [
     path("site/tariffs/<int:pk>/edit/", saidex_views.saidex_tariff_edit, name="saidex_tariff_edit"),
     path("site/tariffs/<int:pk>/delete/", saidex_views.saidex_tariff_delete, name="saidex_tariff_delete"),
     path("site/portfolio/", saidex_views.saidex_portfolio, name="saidex_portfolio"),
+    path("site/portfolio/<int:pk>/edit/", saidex_views.saidex_portfolio_edit, name="saidex_portfolio_edit"),
     path("site/portfolio/<int:pk>/delete/", saidex_views.saidex_portfolio_delete, name="saidex_portfolio_delete"),
     path("site/testimonials/", saidex_views.saidex_testimonials, name="saidex_testimonials"),
+    path("site/testimonials/<int:pk>/edit/", saidex_views.saidex_testimonial_edit, name="saidex_testimonial_edit"),
     path("site/testimonials/<int:pk>/delete/", saidex_views.saidex_testimonial_delete, name="saidex_testimonial_delete"),
 
     # ------------------------------------------------------------------

@@ -37,3 +37,20 @@
     <label class="form-label">{% trans "Tartib" %}</label>
     {{ form.order }}
 </div>
+<div class="col-12"><hr class="my-1"><div class="small fw-semibold text-muted">{% trans "Tarjimalar (bo'sh qolsa — o'zbekchasi ko'rsatiladi)" %}</div></div>
+<div class="col-md-6">
+    <label class="form-label">{% trans "Nomi (ruscha)" %}</label>
+    {{ form.name_ru }}
+</div>
+<div class="col-md-6">
+    <label class="form-label">{% trans "Nomi (inglizcha)" %}</label>
+    {{ form.name_en }}
+</div>
+<div class="col-md-6">
+    <label class="form-label">{% trans "Imkoniyatlar (ruscha)" %}</label>
+    {{ form.features_ru }}
+</div>
+<div class="col-md-6">
+    <label class="form-label">{% trans "Imkoniyatlar (inglizcha)" %}</label>
+    {{ form.features_en }}
+</div>

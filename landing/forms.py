@@ -73,10 +73,15 @@ class TariffForm(forms.ModelForm):
         model = Tariff
         fields = [
             "name", "plan_code", "price", "question_limit", "period", "features", "is_featured", "is_active", "order",
+            "name_ru", "name_en", "features_ru", "features_en",
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Tarif nomi")}),
             "plan_code": forms.Select(attrs={"class": "form-select"}),
+            "name_ru": forms.TextInput(attrs={"class": "form-control"}),
+            "name_en": forms.TextInput(attrs={"class": "form-control"}),
+            "features_ru": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "features_en": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
             "question_limit": forms.NumberInput(attrs={"class": "form-control", "placeholder": "20"}),
             "price": forms.TextInput(attrs={"class": "form-control", "placeholder": "$59"}),
             "period": forms.Select(attrs={"class": "form-select"}),
@@ -98,8 +103,15 @@ class TariffForm(forms.ModelForm):
 class PortfolioItemForm(forms.ModelForm):
     class Meta:
         model = PortfolioItem
-        fields = ["title", "description", "image", "url", "is_active", "order"]
+        fields = [
+            "title", "description", "image", "url", "is_active", "order",
+            "title_ru", "title_en", "description_ru", "description_en",
+        ]
         widgets = {
+            "title_ru": forms.TextInput(attrs={"class": "form-control"}),
+            "title_en": forms.TextInput(attrs={"class": "form-control"}),
+            "description_ru": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "description_en": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "title": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Loyiha nomi")}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "image": forms.ClearableFileInput(attrs={"class": "form-control"}),
@@ -112,8 +124,15 @@ class PortfolioItemForm(forms.ModelForm):
 class TestimonialForm(forms.ModelForm):
     class Meta:
         model = Testimonial
-        fields = ["author_name", "author_role", "text", "avatar", "is_active", "order"]
+        fields = [
+            "author_name", "author_role", "text", "avatar", "is_active", "order",
+            "author_role_ru", "author_role_en", "text_ru", "text_en",
+        ]
         widgets = {
+            "author_role_ru": forms.TextInput(attrs={"class": "form-control"}),
+            "author_role_en": forms.TextInput(attrs={"class": "form-control"}),
+            "text_ru": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "text_en": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "author_name": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Ism-familiya")}),
             "author_role": forms.TextInput(attrs={"class": "form-control", "placeholder": _("Lavozimi / biznesi")}),
             "text": forms.Textarea(attrs={"class": "form-control", "rows": 3}),

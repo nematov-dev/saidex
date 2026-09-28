@@ -1,6 +1,23 @@
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import get_language, gettext_lazy as _
+
+
+class TranslatedFieldsMixin:
+    """
+    Saytdagi kontent (tariflar, mijozlar fikri, qilingan ishlar) bazada saqlanadi — shablon
+    tarjimasi ({% trans %}) unga ta'sir qilmaydi. Shu sababli har bir matn maydonining
+    ruscha/inglizcha nusxasi alohida maydonda (masalan text_ru, text_en) saqlanadi va sayt
+    tanlangan tildagisini ko'rsatadi; tarjima bo'sh bo'lsa — asosiy (o'zbekcha) matn.
+    """
+
+    def translated(self, field: str) -> str:
+        lang = (get_language() or "uz")[:2]
+        if lang in ("ru", "en"):
+            value = getattr(self, f"{field}_{lang}", "")
+            if value:
+                return value
+        return getattr(self, field)
 
 
 class LandingSettings(models.Model):
@@ -32,7 +49,7 @@ class LandingSettings(models.Model):
         return obj
 
 
-class Tariff(models.Model):
+class Tariff(TranslatedFieldsMixin, models.Model):
     PERIOD_CHOICES = [
         ("monthly", _("Oylik")),
         ("yearly", _("Yillik")),
@@ -43,7 +60,9 @@ class Tariff(models.Model):
         ("pro", _("Pro obuna")),
     ]
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(_("Nomi"), max_length=100)
+    name_ru = models.CharField(_("Nomi (ruscha)"), max_length=100, blank=True, default="")
+    name_en = models.CharField(_("Nomi (inglizcha)"), max_length=100, blank=True, default="")
     plan_code = models.CharField(
         max_length=10, choices=PLAN_CODE_CHOICES, blank=True, default="",
         help_text="Qaysi obunaga tegishli: panelda ko'rsatiladigan narx va bepul limit shu yerdan olinadi.",
@@ -55,6 +74,8 @@ class Tariff(models.Model):
     price = models.CharField(max_length=100, help_text="Masalan: $59")
     period = models.CharField(max_length=10, choices=PERIOD_CHOICES, default="monthly")
     features = models.TextField(help_text="Har bir xususiyat alohida qatorda yoziladi.")
+    features_ru = models.TextField(_("Imkoniyatlar (ruscha)"), blank=True, default="")
+    features_en = models.TextField(_("Imkoniyatlar (inglizcha)"), blank=True, default="")
     is_featured = models.BooleanField(default=False, help_text="Eng ommabop deb belgilash.")
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
@@ -93,13 +114,21 @@ class Tariff(models.Model):
         return settings.FREE_PLAN_QUESTION_LIMIT
 
     @property
+    def local_name(self) -> str:
+        return self.translated("name")
+
+    @property
     def feature_list(self) -> list[str]:
-        return [line.strip() for line in self.features.splitlines() if line.strip()]
+        return [line.strip() for line in self.translated("features").splitlines() if line.strip()]
 
 
-class PortfolioItem(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True, default="")
+class PortfolioItem(TranslatedFieldsMixin, models.Model):
+    title = models.CharField(_("Nomi"), max_length=255)
+    title_ru = models.CharField(_("Nomi (ruscha)"), max_length=255, blank=True, default="")
+    title_en = models.CharField(_("Nomi (inglizcha)"), max_length=255, blank=True, default="")
+    description = models.TextField(_("Tavsif"), blank=True, default="")
+    description_ru = models.TextField(_("Tavsif (ruscha)"), blank=True, default="")
+    description_en = models.TextField(_("Tavsif (inglizcha)"), blank=True, default="")
     image = models.ImageField(upload_to="landing/portfolio/", null=True, blank=True)
     url = models.URLField(blank=True, default="")
     is_active = models.BooleanField(default=True)
@@ -114,10 +143,14 @@ class PortfolioItem(models.Model):
         return self.title
 
 
-class Testimonial(models.Model):
-    author_name = models.CharField(max_length=255)
-    author_role = models.CharField(max_length=255, blank=True, default="")
-    text = models.TextField()
+class Testimonial(TranslatedFieldsMixin, models.Model):
+    author_name = models.CharField(_("Ism"), max_length=255)
+    author_role = models.CharField(_("Lavozimi"), max_length=255, blank=True, default="")
+    author_role_ru = models.CharField(_("Lavozimi (ruscha)"), max_length=255, blank=True, default="")
+    author_role_en = models.CharField(_("Lavozimi (inglizcha)"), max_length=255, blank=True, default="")
+    text = models.TextField(_("Matn"))
+    text_ru = models.TextField(_("Matn (ruscha)"), blank=True, default="")
+    text_en = models.TextField(_("Matn (inglizcha)"), blank=True, default="")
     avatar = models.ImageField(upload_to="landing/testimonials/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
@@ -129,3 +162,12 @@ class Testimonial(models.Model):
 
     def __str__(self):
         return self.author_name
+
+
+def _add_local_properties(model, fields):
+    for field in fields:
+        setattr(model, f"local_{field}", property(lambda self, f=field: self.translated(f)))
+
+
+_add_local_properties(PortfolioItem, ["title", "description"])
+_add_local_properties(Testimonial, ["author_role", "text"])

@@ -27,7 +27,10 @@
                 <td>{% if item.image %}<img src="{{ item.image.url }}" style="width:64px;height:40px;object-fit:cover;border-radius:.4rem;">{% else %}—{% endif %}</td>
                 <td>{{ item.title }}</td>
                 <td style="max-width:320px;">{{ item.description|truncatechars:80 }}</td>
-                <td class="text-end">
+                <td class="text-end text-nowrap">
+                    <a href="{% url 'assistant:saidex_portfolio_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i> {% trans "Tahrirlash" %}
+                    </a>
                     {% trans "Ishni o'chirishga ishonchingiz komilmi?" as confirm_delete %}
                     <form method="post" action="{% url 'assistant:saidex_portfolio_delete' item.pk %}" class="d-inline" data-confirm="{{ confirm_delete }}">
                         {% csrf_token %}<button class="btn btn-sm btn-outline-danger">{% trans "O'chirish" %}</button>

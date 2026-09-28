@@ -105,7 +105,7 @@
             {% for tariff in tariffs %}
             <div class="card tariff-card {% if tariff.is_featured %}featured{% endif %}">
                 {% if tariff.is_featured %}<span class="badge-featured">{% trans "Ommabop" %}</span>{% endif %}
-                <h3>{{ tariff.name }}</h3>
+                <h3>{{ tariff.local_name }}</h3>
                 <div class="price">{{ tariff.price }} <small>/ {{ tariff.get_period_display }}</small></div>
                 <ul>
                     {% for feature in tariff.feature_list %}
@@ -141,9 +141,9 @@
         <div class="landing-grid grid-3">
             {% for item in portfolio_items %}
             <a href="{{ item.url|default:'#' }}" class="card portfolio-card" {% if item.url %}target="_blank" rel="noopener"{% endif %}>
-                {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.title }}">{% endif %}
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.description }}</p>
+                {% if item.image %}<img src="{{ item.image.url }}" alt="{{ item.local_title }}">{% endif %}
+                <h3>{{ item.local_title }}</h3>
+                <p>{{ item.local_description }}</p>
             </a>
             {% endfor %}
         </div>
@@ -161,14 +161,14 @@
         <div class="landing-grid grid-3">
             {% for t in testimonials %}
             <div class="card testimonial-card">
-                <p>&ldquo;{{ t.text }}&rdquo;</p>
+                <p>&ldquo;{{ t.local_text }}&rdquo;</p>
                 <div class="testimonial-author">
                     <div class="avatar">
                         {% if t.avatar %}<img src="{{ t.avatar.url }}" alt="{{ t.author_name }}">{% else %}{{ t.author_name|first|upper }}{% endif %}
                     </div>
                     <div>
                         <div class="name">{{ t.author_name }}</div>
-                        {% if t.author_role %}<div class="role">{{ t.author_role }}</div>{% endif %}
+                        {% if t.local_author_role %}<div class="role">{{ t.local_author_role }}</div>{% endif %}
                     </div>
                 </div>
             </div>

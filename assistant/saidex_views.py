@@ -85,6 +85,32 @@ def saidex_portfolio(request):
     return render(request, "assistant/saidex_portfolio.html", {"items": items, "form": form})
 
 
+def _edit_item(request, model, form_class, pk, list_url_name, title):
+    """Qilingan ish / mijoz fikrini tahrirlash (jumladan ruscha va inglizcha tarjimalar)."""
+    item = get_object_or_404(model, pk=pk)
+    if request.method == "POST":
+        form = form_class(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("Saqlandi."))
+            return redirect(list_url_name)
+    else:
+        form = form_class(instance=item)
+    return render(request, "assistant/saidex_item_edit.html", {
+        "form": form, "title": title, "list_url_name": list_url_name,
+    })
+
+
+@superadmin_required
+def saidex_portfolio_edit(request, pk):
+    return _edit_item(request, PortfolioItem, PortfolioItemForm, pk, "assistant:saidex_portfolio", _("Qilingan ishni tahrirlash"))
+
+
+@superadmin_required
+def saidex_testimonial_edit(request, pk):
+    return _edit_item(request, Testimonial, TestimonialForm, pk, "assistant:saidex_testimonials", _("Mijoz fikrini tahrirlash"))
+
+
 @superadmin_required
 @require_POST
 def saidex_portfolio_delete(request, pk):
